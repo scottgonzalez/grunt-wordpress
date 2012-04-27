@@ -26,7 +26,7 @@
 		"node": "*"
 	},
 	"dependencies": {
-		"wordpress": "0.0.4"
+		"wordpress": "0.0.5"
 	},
 	"devDependencies": {
 		"grunt": "0.3.x"
