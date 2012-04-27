@@ -17,7 +17,7 @@ var _client,
 // Async directory recursion, always walks all files before recursing
 function recurse( rootdir, fn, complete ) {
 	var path = rootdir + "/*";
-	async.map( grunt.file.expandFiles( path ), fn, function( error ) {
+	async.mapSeries( grunt.file.expandFiles( path ), fn, function( error ) {
 		if ( error ) {
 			return complete( error );
 		}
