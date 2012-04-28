@@ -40,11 +40,13 @@ function prettyName( postPath ) {
 	return postPath.replace( "/", " " );
 }
 
+// TODO: Support for taxonomies via taxonomies.json
+// TODO: Smarter updates (compare checksums and only republish if there were changes)
 grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML files", function() {
+	this.requires( "wordpress-validate" );
 	var done = this.async();
 	async.waterfall([
 		function getPostPaths( fn ) {
-			// TODO: system.listMethods() to check if gw.getPostPaths exists.
 			getClient().call( "gw.getPostPaths", "any", fn );
 		},
 
@@ -120,6 +122,17 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to WordPress", function() {
 	var done = this.async(),
 		count = 0;
+
+	// TODO:
+	// - Verify that there are no files directly inside dist/
+	//    - Except for taxonomies.json
+	// - Verify that all child posts actually have parents
+	//    - All directories must have a matching file
+	// - Verify that all files have .html extension
+	// - Verify required metadata
+	//    - Title, anything else?
+	// - Verify gw.getPostPaths exists
+	// - Verify that jQuery Slugs plugin exists
 
 	grunt.helper( "wordpress-walk", "dist/", function( post, fn ) {
 		count++;
@@ -231,6 +244,6 @@ grunt.registerHelper( "wordpress-publish-post", function( post, fn ) {
 	}
 });
 
-grunt.registerTask( "wordpress-deploy", "build wordpress-publish" );
+grunt.registerTask( "wordpress-deploy", "build wordpress-validate wordpress-publish" );
 
 };
