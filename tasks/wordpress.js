@@ -40,6 +40,11 @@ function prettyName( postPath ) {
 	return postPath.replace( "/", " " );
 }
 
+// Converts a term to a readable name, e.g., { taxonomy: "foo", name: "bar" } to "foo bar"
+function prettyTermName( term ) {
+	return term.taxonomy + " " + term.name;
+}
+
 function getTaxonomies( fn ) {
 	var client = getClient();
 
@@ -81,10 +86,18 @@ function createTerm( term, fn ) {
 				return fn( error );
 			}
 
+			grunt.log.writeln( "Edited " + prettyTermName( term ).green + "." );
 			fn( null, term.termId );
 		});
 	} else {
-		client.newTerm( term, fn );
+		client.newTerm( term, function( error, termId ) {
+			if ( error ) {
+				return fn( error );
+			}
+
+			grunt.log.writeln( "Created " + prettyTermName( term ).green + "." );
+			fn( null, termId );
+		});
 	}
 }
 
@@ -118,11 +131,10 @@ function processTaxonomies( path, fn ) {
 						term.parent = parent;
 						createTerm( term, function( error, termId ) {
 							if ( error ) {
-								grunt.log.error( "Error creating " + taxonomy + " " + term.name + "." );
+								grunt.log.error( "Error processing " + prettyTermName( term ) + "." );
 								return fn( error );
 							}
 
-							grunt.log.writeln( "Created " + (taxonomy + " " + term.name).green + "." );
 							delete existingTaxonomies[ taxonomy ][ term.name ];
 							if ( !term.children ) {
 								return fn( null, termId );
@@ -154,11 +166,11 @@ function processTaxonomies( path, fn ) {
 					term = taxonomy[ term ];
 					client.deleteTerm( taxonomyName, term.termId, function( error ) {
 						if ( error ) {
-							grunt.log.error( "Error deleting " + taxonomyName + " " + term.name + "." );
+							grunt.log.error( "Error deleting " + prettyTermName( term ) + "." );
 							return fn( error );
 						}
 
-						grunt.log.writeln( "Deleted " + (taxonomyName + " " + term.name).red + "." );
+						grunt.log.writeln( "Deleted " + prettyTermName( term ).red + "." );
 						fn( null );
 					});
 				}, fn );
@@ -205,7 +217,6 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 						return fn( error );
 					}
 
-					grunt.log.writeln( "Published " + prettyName( post.__postPath ).green + "." );
 					posts[ post.__postPath ] = id;
 					delete postPaths[ post.__postPath ];
 					fn( null );
@@ -379,11 +390,19 @@ grunt.registerHelper( "wordpress-publish-post", function( post, fn ) {
 					return fn( error );
 				}
 
+				grunt.log.writeln( "Edited " + prettyName( post.__postPath ).green + "." );
 				fn( null, post.id );
 			});
 		});
 	} else {
-		client.newPost( post, fn );
+		client.newPost( post, function( error, id ) {
+			if ( error ) {
+				return fn( error );
+			}
+
+			grunt.log.writeln( "Created " + prettyName( post.__postPath ).green + "." );
+			fn( null, id );
+		});
 	}
 });
 
