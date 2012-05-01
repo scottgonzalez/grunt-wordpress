@@ -40,12 +40,149 @@ function prettyName( postPath ) {
 	return postPath.replace( "/", " " );
 }
 
-// TODO: Support for taxonomies via taxonomies.json
+function getTaxonomies( fn ) {
+	var client = getClient();
+
+	async.waterfall([
+		function getAllTaxonomies( fn ) {
+			client.getTaxonomies( fn );
+		},
+
+		function getAllTerms( taxonomies, fn ) {
+			var all = {};
+			async.forEach( taxonomies, function( taxonomy, fn ) {
+				all[ taxonomy.name ] = {};
+				client.getTerms( taxonomy.name, function( error, terms ) {
+					if ( error ) {
+						return fn( error );
+					}
+
+					terms.forEach(function( term ) {
+						all[ taxonomy.name ][ term.name ] = term;
+					});
+					fn( null );
+				});
+			}, function( error ) {
+				if ( error ) {
+					return fn( error );
+				}
+
+				fn( null, all );
+			});
+		}
+	], fn );
+}
+
+function createTerm( term, fn ) {
+	var client = getClient();
+	if ( term.termId ) {
+		client.editTerm( term.termId, term, function( error ) {
+			if ( error ) {
+				return fn( error );
+			}
+
+			fn( null, term.termId );
+		});
+	} else {
+		client.newTerm( term, fn );
+	}
+}
+
+function processTaxonomies( path, fn ) {
+	var taxonomies,
+		client = getClient();
+
+	try {
+		taxonomies = grunt.file.readJSON( path );
+	} catch( error ) {
+		grunt.log.error( "Invalid taxonomy definitions file." );
+		return fn( error );
+	}
+
+	async.waterfall([
+		getTaxonomies,
+
+		function publishTaxonomies( existingTaxonomies, fn ) {
+			async.forEachSeries( Object.keys( taxonomies ), function( taxonomy, fn ) {
+				// Taxonomies must already exist in WordPress
+				if ( !existingTaxonomies[ taxonomy ] ) {
+					return fn( new Error( "Invalid taxonomy: " + taxonomy ) );
+				}
+
+				function process( terms, parent, fn ) {
+					async.forEachSeries( terms, function( term, fn ) {
+						if ( existingTaxonomies[ taxonomy ][ term.name ] ) {
+							term.termId = existingTaxonomies[ taxonomy ][ term.name ].termId;
+						}
+						term.taxonomy = taxonomy;
+						term.parent = parent;
+						createTerm( term, function( error, termId ) {
+							if ( error ) {
+								grunt.log.error( "Error creating " + taxonomy + " " + term.name + "." );
+								return fn( error );
+							}
+
+							grunt.log.writeln( "Created " + (taxonomy + " " + term.name).green + "." );
+							delete existingTaxonomies[ taxonomy ][ term.name ];
+							if ( !term.children ) {
+								return fn( null, termId );
+							}
+
+							// Process child terms
+							process( term.children, termId, fn );
+						});
+					}, function( error ) {
+						fn( error );
+					});
+				}
+
+				// Process top level terms
+				process( taxonomies[ taxonomy ], null, fn );
+			}, function( error ) {
+				if ( error ) {
+					return fn( error );
+				}
+
+				fn( null, existingTaxonomies );
+			});
+		},
+
+		function deleteTaxonomies( taxonomies, fn ) {
+			async.map( Object.keys( taxonomies ), function( taxonomyName, fn ) {
+				var taxonomy = taxonomies[ taxonomyName ];
+				async.forEachSeries( Object.keys( taxonomy ), function( term, fn ) {
+					term = taxonomy[ term ];
+					client.deleteTerm( taxonomyName, term.termId, function( error ) {
+						if ( error ) {
+							grunt.log.error( "Error deleting " + taxonomyName + " " + term.name + "." );
+							return fn( error );
+						}
+
+						grunt.log.writeln( "Deleted " + (taxonomyName + " " + term.name).red + "." );
+						fn( null );
+					});
+				}, fn );
+			}, fn );
+		}
+	], function( error ) {
+		fn( error );
+	});
+}
+
 // TODO: Smarter updates (compare checksums and only republish if there were changes)
 grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML files", function() {
 	this.requires( "wordpress-validate" );
 	var done = this.async();
 	async.waterfall([
+		function taxonomies( fn ) {
+			var taxonomiesPath = "dist/taxonomies.json";
+			if ( path.existsSync( taxonomiesPath ) ) {
+				processTaxonomies( taxonomiesPath, fn );
+			} else {
+				fn( null );
+			}
+		},
+
 		function getPostPaths( fn ) {
 			getClient().call( "gw.getPostPaths", "any", fn );
 		},
@@ -150,13 +287,19 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to
 
 grunt.registerHelper( "wordpress-walk", function( dir, walkFn, complete ) {
 	recurse( dir, function( file, fn ) {
-		var postPath = file.substr( dir.length, file.length - dir.length - 5 ),
+		var post,
+			postPath = file.substr( dir.length, file.length - dir.length - 5 ),
 			parts = postPath.split( "/" ),
 			name = parts.pop(),
 			parent = parts.length > 1 ? parts.join( "/" ) : null,
-			type = parts.shift(),
-			post = grunt.helper( "wordpress-parse-post", file );
+			type = parts.shift();
 
+		// If there's no type, then we're in the root and looking at metadata
+		if ( !type ) {
+			return fn( null );
+		}
+
+		post = grunt.helper( "wordpress-parse-post", file );
 		if ( !post ) {
 			return fn( new Error( "Invalid post: " + file ) );
 		}
