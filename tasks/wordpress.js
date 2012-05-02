@@ -8,6 +8,8 @@
 
 module.exports = function(grunt) {
 
+// TODO: support for static resources (requires new XML-RPC method)
+
 var _client,
 	fs = require( "fs" ),
 	path = require( "path" ),
@@ -50,18 +52,24 @@ function getTaxonomies( fn ) {
 
 	async.waterfall([
 		function getAllTaxonomies( fn ) {
+			grunt.verbose.write( "Getting taxonomies from WordPress..." );
 			client.getTaxonomies( fn );
 		},
 
 		function getAllTerms( taxonomies, fn ) {
 			var all = {};
-			async.forEach( taxonomies, function( taxonomy, fn ) {
+			grunt.verbose.ok();
+			async.forEachSeries( taxonomies, function( taxonomy, fn ) {
 				all[ taxonomy.name ] = {};
+				grunt.verbose.write( "Getting " + taxonomy.name + " terms..." );
 				client.getTerms( taxonomy.name, function( error, terms ) {
 					if ( error ) {
+						grunt.verbose.error();
+						grunt.verbose.or.error( "Error getting " + taxonomy.name + "." );
 						return fn( error );
 					}
 
+					grunt.verbose.ok();
 					terms.forEach(function( term ) {
 						all[ taxonomy.name ][ term.name ] = term;
 					});
@@ -72,6 +80,7 @@ function getTaxonomies( fn ) {
 					return fn( error );
 				}
 
+				grunt.verbose.writeln();
 				fn( null, all );
 			});
 		}
@@ -79,23 +88,31 @@ function getTaxonomies( fn ) {
 }
 
 function createTerm( term, fn ) {
-	var client = getClient();
+	var client = getClient(),
+		name = prettyTermName( term );
+
 	if ( term.termId ) {
+		grunt.verbose.write( "Editing " + name + "..." );
 		client.editTerm( term.termId, term, function( error ) {
 			if ( error ) {
+				grunt.verbose.error();
 				return fn( error );
 			}
 
-			grunt.log.writeln( "Edited " + prettyTermName( term ).green + "." );
+			grunt.verbose.ok();
+			grunt.verbose.or.writeln( "Edited " + name + "." );
 			fn( null, term.termId );
 		});
 	} else {
+		grunt.verbose.write( "Creating " + name + "..." );
 		client.newTerm( term, function( error, termId ) {
 			if ( error ) {
+				grunt.verbose.error();
 				return fn( error );
 			}
 
-			grunt.log.writeln( "Created " + prettyTermName( term ).green + "." );
+			grunt.verbose.ok();
+			grunt.verbose.or.writeln( "Created " + name + "." );
 			fn( null, termId );
 		});
 	}
@@ -105,6 +122,7 @@ function processTaxonomies( path, fn ) {
 	var taxonomies,
 		client = getClient();
 
+	grunt.verbose.writeln( "Processing taxonomies.".bold );
 	try {
 		taxonomies = grunt.file.readJSON( path );
 	} catch( error ) {
@@ -119,6 +137,7 @@ function processTaxonomies( path, fn ) {
 			async.forEachSeries( Object.keys( taxonomies ), function( taxonomy, fn ) {
 				// Taxonomies must already exist in WordPress
 				if ( !existingTaxonomies[ taxonomy ] ) {
+					grunt.log.error( "Taxonomies must exist in WordPress prior to use in taxonomies.json." );
 					return fn( new Error( "Invalid taxonomy: " + taxonomy ) );
 				}
 
@@ -131,7 +150,7 @@ function processTaxonomies( path, fn ) {
 						term.parent = parent;
 						createTerm( term, function( error, termId ) {
 							if ( error ) {
-								grunt.log.error( "Error processing " + prettyTermName( term ) + "." );
+								grunt.verbose.or.error( "Error processing " + prettyTermName( term ) + "." );
 								return fn( error );
 							}
 
@@ -149,32 +168,49 @@ function processTaxonomies( path, fn ) {
 				}
 
 				// Process top level terms
+				grunt.verbose.writeln( "Processing terms.".bold );
 				process( taxonomies[ taxonomy ], null, fn );
 			}, function( error ) {
 				if ( error ) {
 					return fn( error );
 				}
 
+				grunt.verbose.writeln();
 				fn( null, existingTaxonomies );
 			});
 		},
 
+		// TODO: Don't delete taxonomies until after processing posts.
+		// This will allow us to use keywords without defining all of them upfront.
 		function deleteTaxonomies( taxonomies, fn ) {
+			grunt.verbose.writeln( "Deleting old terms.".bold );
 			async.map( Object.keys( taxonomies ), function( taxonomyName, fn ) {
 				var taxonomy = taxonomies[ taxonomyName ];
 				async.forEachSeries( Object.keys( taxonomy ), function( term, fn ) {
+					var name;
 					term = taxonomy[ term ];
+					name = prettyTermName( term );
+					grunt.verbose.write( "Deleting " + name + "..." );
 					client.deleteTerm( taxonomyName, term.termId, function( error ) {
 						if ( error ) {
-							grunt.log.error( "Error deleting " + prettyTermName( term ) + "." );
+							grunt.verbose.error();
+							grunt.verbose.or.error( "Error deleting " + name + "." );
 							return fn( error );
 						}
 
-						grunt.log.writeln( "Deleted " + prettyTermName( term ).red + "." );
+						grunt.verbose.ok();
+						grunt.verbose.or.writeln( "Deleted " + name + "." );
 						fn( null );
 					});
 				}, fn );
-			}, fn );
+			}, function( error ) {
+				if ( error ) {
+					return fn( error );
+				}
+
+				grunt.verbose.writeln();
+				fn( null );
+			});
 		}
 	], function( error ) {
 		fn( error );
@@ -196,12 +232,16 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 		},
 
 		function getPostPaths( fn ) {
+			grunt.verbose.write( "Getting post paths from WordPress..." );
 			getClient().call( "gw.getPostPaths", "any", fn );
 		},
 
 		function publishPosts( postPaths, fn ) {
 			var posts = {};
+			grunt.verbose.ok();
 
+			grunt.verbose.writeln();
+			grunt.verbose.writeln( "Publishing posts.".bold );
 			grunt.helper( "wordpress-walk", "dist/", function( post, fn ) {
 				post.id = postPaths[ post.__postPath ];
 				if ( !post.status ) {
@@ -213,7 +253,7 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 
 				grunt.helper( "wordpress-publish-post", post, function( error, id ) {
 					if ( error ) {
-						grunt.log.error( "Error publishing " + prettyName( post.__postPath ) + "." );
+						grunt.verbose.or.error( "Error publishing " + prettyName( post.__postPath ) + "." );
 						return fn( error );
 					}
 
@@ -226,31 +266,48 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 					return fn( error );
 				}
 
+				grunt.verbose.writeln();
 				fn( null, postPaths );
 			});
 		},
 
 		function deletePosts( postPaths, fn ) {
 			var client = getClient();
+
+			grunt.verbose.writeln( "Deleting old posts.".bold );
 			async.map( Object.keys( postPaths ), function( postPath, fn ) {
+				var name = prettyName( postPath );
+				grunt.verbose.write( "Trashing " + name + "..." );
 				client.deletePost( postPaths[ postPath ], function( error ) {
 					if ( error ) {
-						grunt.log.error( "Error trashing " + prettyName( postPath ) + "." );
+						grunt.verbose.error();
+						grunt.verbose.or.error( "Error trashing " + name + "." );
 						return fn( error );
 					}
 
 					// The first delete moves to trash; this one deletes :-)
+					grunt.verbose.ok();
+					grunt.verbose.write( "Deleting " + name + "..." );
 					client.deletePost( postPaths[ postPath ], function( error ) {
 						if ( error ) {
-							grunt.log.error( "Error deleting " + prettyName( postPath ) + "." );
+							grunt.verbose.error();
+							grunt.verbose.or.error( "Error deleting " + name + "." );
 							return fn( error );
 						}
 
-						grunt.log.writeln( "Deleted " + prettyName( postPath ).red + "." );
+						grunt.verbose.ok();
+						grunt.verbose.or.writeln( "Deleted " + name + "." );
 						fn( null );
 					});
 				});
-			}, fn );
+			}, function( error ) {
+				if ( error ) {
+					return fn( error );
+				}
+
+				grunt.verbose.writeln();
+				fn( null );
+			});
 		}
 	], function( error ) {
 		if ( !error ) {
@@ -349,14 +406,19 @@ grunt.registerHelper( "wordpress-parse-post", function( path ) {
 
 // Publish (create or update) a post to WordPress.
 grunt.registerHelper( "wordpress-publish-post", function( post, fn ) {
-	var client = getClient();
+	var client = getClient(),
+		name = prettyName( post.__postPath );
+
 	if ( post.id ) {
 		// Get existing custom fields
+		grunt.verbose.write( "Getting custom fields for " + name + "..." );
 		client.getPost( post.id, [ "customFields" ], function( error, postData ) {
 			if ( error ) {
+				grunt.verbose.error();
 				return fn( error );
 			}
 
+			grunt.verbose.ok();
 			// If there are any existing custom fields, then we need to determine
 			// what to add, edit, and delete.
 			if ( postData.customFields.length ) {
@@ -385,22 +447,28 @@ grunt.registerHelper( "wordpress-publish-post", function( post, fn ) {
 			}
 
 			// Update the post
+			grunt.verbose.write( "Editing " + name + "..." );
 			client.editPost( post.id, post, function( error ) {
 				if ( error ) {
+					grunt.verbose.error();
 					return fn( error );
 				}
 
-				grunt.log.writeln( "Edited " + prettyName( post.__postPath ).green + "." );
+				grunt.verbose.ok();
+				grunt.verbose.or.writeln( "Edited " + name + "." );
 				fn( null, post.id );
 			});
 		});
 	} else {
+		grunt.verbose.write( "Creating " + name + "..." );
 		client.newPost( post, function( error, id ) {
 			if ( error ) {
+				grunt.verbose.error();
 				return fn( error );
 			}
 
-			grunt.log.writeln( "Created " + prettyName( post.__postPath ).green + "." );
+			grunt.verbose.ok();
+			grunt.verbose.or.writeln( "Created " + name + "." );
 			fn( null, id );
 		});
 	}
