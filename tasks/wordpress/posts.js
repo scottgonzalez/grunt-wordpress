@@ -32,6 +32,7 @@ grunt.registerHelper( "wordpress-get-postpaths", function( fn ) {
 		}
 
 		grunt.verbose.ok();
+		grunt.verbose.writeln();
 		fn( null, postPaths );
 	});
 });
@@ -180,6 +181,60 @@ grunt.registerHelper( "wordpress-delete-post", function( postId, postPath, fn ) 
 			fn( null );
 		});
 	});
+});
+
+grunt.registerHelper( "wordpress-sync-posts", function( path, fn ) {
+	async.waterfall([
+		function getPostPaths( fn ) {
+			grunt.helper( "wordpress-get-postpaths", fn );
+		},
+
+		function publishPosts( postPaths, fn ) {
+			var posts = {};
+
+			grunt.verbose.writeln( "Publishing posts.".bold );
+			grunt.helper( "wordpress-walk-posts", path, function( post, fn ) {
+				post.id = postPaths[ post.__postPath ];
+				if ( !post.status ) {
+					post.status = "publish";
+				}
+				if ( post.__parent ) {
+					post.parent = postPaths[ post.__parent ] || posts[ post.__parent ];
+				}
+
+				grunt.helper( "wordpress-publish-post", post, function( error, id ) {
+					if ( error ) {
+						return fn( error );
+					}
+
+					posts[ post.__postPath ] = id;
+					delete postPaths[ post.__postPath ];
+					fn( null );
+				});
+			}, function( error ) {
+				if ( error ) {
+					return fn( error );
+				}
+
+				grunt.verbose.writeln();
+				fn( null, postPaths );
+			});
+		},
+
+		function deletePosts( postPaths, fn ) {
+			grunt.verbose.writeln( "Deleting old posts.".bold );
+			async.map( Object.keys( postPaths ), function( postPath, fn ) {
+				grunt.helper( "wordpress-delete-post", postPaths[ postPath ], postPath, fn );
+			}, function( error ) {
+				if ( error ) {
+					return fn( error );
+				}
+
+				grunt.verbose.writeln();
+				fn( null );
+			});
+		}
+	], fn );
 });
 
 };

@@ -28,64 +28,17 @@ grunt.registerHelper( "wordpress-client", function() {
 // TODO: Smarter updates (compare checksums and only republish if there were changes)
 grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML files", function() {
 	this.requires( "wordpress-validate" );
+
 	var done = this.async(),
 		dir = grunt.config( "wordpress.dir" );
+
 	async.waterfall([
-		function processTaxonomies( fn ) {
+		function syncTerms( fn ) {
 			grunt.helper( "wordpress-sync-terms", path.join( dir, "taxonomies.json" ), fn );
 		},
 
-		function getPostPaths( fn ) {
-			grunt.helper( "wordpress-get-postpaths", fn );
-		},
-
-		function publishPosts( postPaths, fn ) {
-			var posts = {};
-
-			grunt.verbose.writeln();
-			grunt.verbose.writeln( "Publishing posts.".bold );
-			grunt.helper( "wordpress-walk-posts", path.join( dir, "posts/" ), function( post, fn ) {
-				post.id = postPaths[ post.__postPath ];
-				if ( !post.status ) {
-					post.status = "publish";
-				}
-				if ( post.__parent ) {
-					post.parent = postPaths[ post.__parent ] || posts[ post.__parent ];
-				}
-
-				grunt.helper( "wordpress-publish-post", post, function( error, id ) {
-					if ( error ) {
-						return fn( error );
-					}
-
-					posts[ post.__postPath ] = id;
-					delete postPaths[ post.__postPath ];
-					fn( null );
-				});
-			}, function( error ) {
-				if ( error ) {
-					return fn( error );
-				}
-
-				grunt.verbose.writeln();
-				fn( null, postPaths );
-			});
-		},
-
-		function deletePosts( postPaths, fn ) {
-			var client = grunt.helper( "wordpress-client" );
-
-			grunt.verbose.writeln( "Deleting old posts.".bold );
-			async.map( Object.keys( postPaths ), function( postPath, fn ) {
-				grunt.helper( "wordpress-delete-post", postPaths[ postPath ], postPath, fn );
-			}, function( error ) {
-				if ( error ) {
-					return fn( error );
-				}
-
-				grunt.verbose.writeln();
-				fn( null );
-			});
+		function syncPosts( fn ) {
+			grunt.helper( "wordpress-sync-posts", path.join( dir, "posts/" ), fn );
 		}
 	], function( error ) {
 		if ( !error ) {
