@@ -42,9 +42,9 @@ function prettyName( postPath ) {
 	return postPath.replace( "/", " " );
 }
 
-// Converts a term to a readable name, e.g., { taxonomy: "foo", name: "bar" } to "foo bar"
+// Converts a term to a readable name, e.g., { taxonomy: "foo", slug: "bar" } to "foo bar"
 function prettyTermName( term ) {
-	return term.taxonomy + " " + term.name;
+	return term.taxonomy + " " + term.slug;
 }
 
 function getTaxonomies( fn ) {
@@ -71,7 +71,7 @@ function getTaxonomies( fn ) {
 
 					grunt.verbose.ok();
 					terms.forEach(function( term ) {
-						all[ taxonomy.name ][ term.name ] = term;
+						all[ taxonomy.name ][ term.slug ] = term;
 					});
 					fn( null );
 				});
@@ -143,8 +143,8 @@ function processTaxonomies( path, fn ) {
 
 				function process( terms, parent, fn ) {
 					async.forEachSeries( terms, function( term, fn ) {
-						if ( existingTaxonomies[ taxonomy ][ term.name ] ) {
-							term.termId = existingTaxonomies[ taxonomy ][ term.name ].termId;
+						if ( existingTaxonomies[ taxonomy ][ term.slug ] ) {
+							term.termId = existingTaxonomies[ taxonomy ][ term.slug ].termId;
 						}
 						term.taxonomy = taxonomy;
 						term.parent = parent;
@@ -154,7 +154,7 @@ function processTaxonomies( path, fn ) {
 								return fn( error );
 							}
 
-							delete existingTaxonomies[ taxonomy ][ term.name ];
+							delete existingTaxonomies[ taxonomy ][ term.slug ];
 							if ( !term.children ) {
 								return fn( null, termId );
 							}
@@ -338,6 +338,9 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to
 	//    - Title, anything else?
 	// - Verify gw.getPostPaths exists
 	// - Verify that jQuery Slugs plugin exists
+	// - Verify taxonomies.js
+	//    - Requires name, slug
+	//    - slug must be [a-z0-9.-]
 
 	grunt.helper( "wordpress-walk-posts", dir, function( post, fn ) {
 		count++;
