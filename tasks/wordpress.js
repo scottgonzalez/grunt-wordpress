@@ -220,10 +220,11 @@ function processTaxonomies( path, fn ) {
 // TODO: Smarter updates (compare checksums and only republish if there were changes)
 grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML files", function() {
 	this.requires( "wordpress-validate" );
-	var done = this.async();
+	var done = this.async(),
+		dir = grunt.config( "wordpress.dir" );
 	async.waterfall([
 		function taxonomies( fn ) {
-			var taxonomiesPath = "dist/taxonomies.json";
+			var taxonomiesPath = path.join( dir, "taxonomies.json" );
 			if ( path.existsSync( taxonomiesPath ) ) {
 				processTaxonomies( taxonomiesPath, fn );
 			} else {
@@ -242,7 +243,7 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 
 			grunt.verbose.writeln();
 			grunt.verbose.writeln( "Publishing posts.".bold );
-			grunt.helper( "wordpress-walk", "dist/", function( post, fn ) {
+			grunt.helper( "wordpress-walk-posts", dir, function( post, fn ) {
 				post.id = postPaths[ post.__postPath ];
 				if ( !post.status ) {
 					post.status = "publish";
@@ -326,11 +327,10 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 
 grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to WordPress", function() {
 	var done = this.async(),
+		dir = grunt.config( "wordpress.dir" ),
 		count = 0;
 
 	// TODO:
-	// - Verify that there are no files directly inside dist/
-	//    - Except for taxonomies.json
 	// - Verify that all child posts actually have parents
 	//    - All directories must have a matching file
 	// - Verify that all files have .html extension
@@ -339,7 +339,7 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to
 	// - Verify gw.getPostPaths exists
 	// - Verify that jQuery Slugs plugin exists
 
-	grunt.helper( "wordpress-walk", "dist/", function( post, fn ) {
+	grunt.helper( "wordpress-walk-posts", dir, function( post, fn ) {
 		count++;
 		fn( null );
 	}, function( error ) {
@@ -353,21 +353,16 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to
 	});
 });
 
-grunt.registerHelper( "wordpress-walk", function( dir, walkFn, complete ) {
+grunt.registerHelper( "wordpress-walk-posts", function( dir, walkFn, complete ) {
+	dir = path.join( dir, "posts/" );
 	recurse( dir, function( file, fn ) {
-		var post,
-			postPath = file.substr( dir.length, file.length - dir.length - 5 ),
+		var postPath = file.substr( dir.length, file.length - dir.length - 5 ),
 			parts = postPath.split( "/" ),
 			name = parts.pop(),
 			parent = parts.length > 1 ? parts.join( "/" ) : null,
-			type = parts.shift();
+			type = parts.shift(),
+			post = grunt.helper( "wordpress-parse-post", file );
 
-		// If there's no type, then we're in the root and looking at metadata
-		if ( !type ) {
-			return fn( null );
-		}
-
-		post = grunt.helper( "wordpress-parse-post", file );
 		if ( !post ) {
 			return fn( new Error( "Invalid post: " + file ) );
 		}
