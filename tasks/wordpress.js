@@ -63,6 +63,8 @@ function getTaxonomies( fn ) {
 				all[ taxonomy.name ] = {};
 				grunt.verbose.write( "Getting " + taxonomy.name + " terms..." );
 				client.getTerms( taxonomy.name, function( error, terms ) {
+					var idMap = {};
+
 					if ( error ) {
 						grunt.verbose.error();
 						grunt.verbose.or.error( "Error getting " + taxonomy.name + "." );
@@ -70,8 +72,21 @@ function getTaxonomies( fn ) {
 					}
 
 					grunt.verbose.ok();
+
+					function expandSlug( term ) {
+						var slug = term.slug;
+						while ( term.parent !== "0" ) {
+							term = idMap[ term.parent ];
+							slug = term.slug + "/" + slug;
+						}
+						return slug;
+					}
 					terms.forEach(function( term ) {
-						all[ taxonomy.name ][ term.slug ] = term;
+						idMap[ term.termId ] = term;
+					});
+
+					terms.forEach(function( term ) {
+						all[ taxonomy.name ][ expandSlug( term ) ] = term;
 					});
 					fn( null );
 				});
@@ -143,24 +158,33 @@ function processTaxonomies( path, fn ) {
 
 				function process( terms, parent, fn ) {
 					async.forEachSeries( terms, function( term, fn ) {
-						if ( existingTaxonomies[ taxonomy ][ term.slug ] ) {
-							term.termId = existingTaxonomies[ taxonomy ][ term.slug ].termId;
+						term.__slug = (parent ? parent.__slug + "/" : "") + term.slug;
+						if ( existingTaxonomies[ taxonomy ][ term.__slug ] ) {
+							term.termId = existingTaxonomies[ taxonomy ][ term.__slug ].termId;
 						}
 						term.taxonomy = taxonomy;
-						term.parent = parent;
+						term.parent = parent ? parent.termId : null;
 						createTerm( term, function( error, termId ) {
 							if ( error ) {
 								grunt.verbose.or.error( "Error processing " + prettyTermName( term ) + "." );
 								return fn( error );
 							}
 
-							delete existingTaxonomies[ taxonomy ][ term.slug ];
+							function done( error ) {
+								if ( error ) {
+									return fn( error );
+								}
+
+								delete existingTaxonomies[ taxonomy ][ term.__slug ];
+								fn( null, termId );
+							}
+
 							if ( !term.children ) {
-								return fn( null, termId );
+								return done();
 							}
 
 							// Process child terms
-							process( term.children, termId, fn );
+							process( term.children, term, done );
 						});
 					}, function( error ) {
 						fn( error );
