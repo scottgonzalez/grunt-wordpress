@@ -149,6 +149,7 @@ function processTaxonomies( path, fn ) {
 								return fn( error );
 							}
 
+							term.termId = termId;
 							function done( error ) {
 								if ( error ) {
 									return fn( error );
