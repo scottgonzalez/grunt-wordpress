@@ -37,7 +37,6 @@ grunt.registerHelper( "wordpress-get-postpaths", function( fn ) {
 });
 
 grunt.registerHelper( "wordpress-walk-posts", function( dir, walkFn, complete ) {
-	dir = path.join( dir, "posts/" );
 	recurse( dir, function( file, fn ) {
 		var postPath = file.substr( dir.length, file.length - dir.length - 5 ),
 			parts = postPath.split( "/" ),

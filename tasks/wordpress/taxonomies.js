@@ -1,6 +1,7 @@
 module.exports = function( grunt ) {
 
-var async = grunt.utils.async;
+var path = require( "path" ),
+	async = grunt.utils.async;
 
 // Converts a term to a readable name, e.g., { taxonomy: "foo", slug: "bar" } to "foo bar"
 function prettyTermName( term ) {
@@ -110,24 +111,33 @@ grunt.registerHelper( "wordpress-delete-term", function( term, fn ) {
 	});
 });
 
-function processTaxonomies( path, fn ) {
+grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 	var taxonomies,
 		client = grunt.helper( "wordpress-client" );
 
-	grunt.verbose.writeln( "Processing taxonomies.".bold );
+	grunt.verbose.writeln( "Synchronizing terms.".bold );
+
+	// Check if there are any terms to process
+	if ( !path.existsSync( filepath ) ) {
+		grunt.verbose.writeln( "No terms to process." );
+		grunt.verbose.writeln();
+		return fn( null );
+	}
+
+	// Check if the taxonomies JSON format is valid
 	try {
-		taxonomies = grunt.file.readJSON( path );
+		taxonomies = grunt.file.readJSON( filepath );
 	} catch( error ) {
 		grunt.log.error( "Invalid taxonomy definitions file." );
 		return fn( error );
 	}
 
 	async.waterfall([
-		function getTaxonomies( fn ) {
+		function getTerms( fn ) {
 			grunt.helper( "wordpress-get-terms", fn );
 		},
 
-		function publishTaxonomies( existingTaxonomies, fn ) {
+		function publishTerms( existingTaxonomies, fn ) {
 			async.forEachSeries( Object.keys( taxonomies ), function( taxonomy, fn ) {
 				// Taxonomies must already exist in WordPress
 				if ( !existingTaxonomies[ taxonomy ] ) {
@@ -184,9 +194,9 @@ function processTaxonomies( path, fn ) {
 			});
 		},
 
-		// TODO: Don't delete taxonomies until after processing posts.
+		// TODO: Don't delete terms until after processing posts.
 		// This will allow us to use keywords without defining all of them upfront.
-		function deleteTaxonomies( taxonomies, fn ) {
+		function deleteTerms( taxonomies, fn ) {
 			grunt.verbose.writeln( "Deleting old terms.".bold );
 			async.map( Object.keys( taxonomies ), function( taxonomyName, fn ) {
 				var taxonomy = taxonomies[ taxonomyName ];
@@ -205,10 +215,6 @@ function processTaxonomies( path, fn ) {
 	], function( error ) {
 		fn( error );
 	});
-}
-
-return {
-	process: processTaxonomies
-};
+});
 
 };

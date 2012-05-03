@@ -11,11 +11,11 @@ module.exports = function( grunt ) {
 // TODO: support for static resources (requires new XML-RPC method)
 
 require( grunt.task.getFile( "wordpress/posts.js" ) )( grunt );
+require( grunt.task.getFile( "wordpress/taxonomies.js" ) )( grunt );
 
 var _client,
 	path = require( "path" ),
 	wordpress = require( "wordpress" ),
-	taxonomies = require( grunt.task.getFile( "wordpress/taxonomies.js" ) )( grunt ),
 	async = grunt.utils.async;
 
 grunt.registerHelper( "wordpress-client", function() {
@@ -32,12 +32,7 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 		dir = grunt.config( "wordpress.dir" );
 	async.waterfall([
 		function processTaxonomies( fn ) {
-			var taxonomiesPath = path.join( dir, "taxonomies.json" );
-			if ( path.existsSync( taxonomiesPath ) ) {
-				taxonomies.process( taxonomiesPath, fn );
-			} else {
-				fn( null );
-			}
+			grunt.helper( "wordpress-sync-terms", path.join( dir, "taxonomies.json" ), fn );
 		},
 
 		function getPostPaths( fn ) {
@@ -49,7 +44,7 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 
 			grunt.verbose.writeln();
 			grunt.verbose.writeln( "Publishing posts.".bold );
-			grunt.helper( "wordpress-walk-posts", dir, function( post, fn ) {
+			grunt.helper( "wordpress-walk-posts", path.join( dir, "posts/" ), function( post, fn ) {
 				post.id = postPaths[ post.__postPath ];
 				if ( !post.status ) {
 					post.status = "publish";
@@ -125,7 +120,7 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to
 	//    - Slug must be [a-z0-9.-], no consecutive dashes
 	//    - Check for existing terms with same name, but different slug
 
-	grunt.helper( "wordpress-walk-posts", dir, function( post, fn ) {
+	grunt.helper( "wordpress-walk-posts", path.join( dir, "posts/" ), function( post, fn ) {
 		count++;
 		fn( null );
 	}, function( error ) {
