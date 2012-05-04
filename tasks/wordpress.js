@@ -68,7 +68,7 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing
 	//    - Title, anything else?
 	// - Verify gw.getPostPaths exists
 	// - Verify that jQuery Slugs plugin exists
-	// - Verify taxonomies.js
+	// - Verify taxonomies.json
 	//    - Requires name, slug
 	//    - Slug must be [a-z0-9.-], no consecutive dashes
 	//    - Check for existing terms with same name, but different slug
@@ -88,6 +88,6 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing
 });
 
 grunt.registerTask( "wordpress-publish", "wordpress-validate wordpress-sync" );
-grunt.registerTask( "wordpress-deploy", "build wordpress-publish" );
+grunt.registerTask( "wordpress-deploy", "build-wordpress wordpress-publish" );
 
 };
