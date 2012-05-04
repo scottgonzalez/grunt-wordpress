@@ -26,7 +26,7 @@ grunt.registerHelper( "wordpress-client", function() {
 });
 
 // TODO: Smarter updates (compare checksums and only republish if there were changes)
-grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML files", function() {
+grunt.registerTask( "wordpress-sync", "Synchronize WordPress with local content", function() {
 	this.requires( "wordpress-validate" );
 
 	var done = this.async(),
@@ -55,7 +55,7 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 	});
 });
 
-grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to WordPress", function() {
+grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing WordPress", function() {
 	var done = this.async(),
 		dir = grunt.config( "wordpress.dir" ),
 		count = 0;
@@ -87,6 +87,7 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for publishing to
 	});
 });
 
-grunt.registerTask( "wordpress-deploy", "build wordpress-validate wordpress-publish" );
+grunt.registerTask( "wordpress-publish", "wordpress-validate wordpress-sync" );
+grunt.registerTask( "wordpress-deploy", "build wordpress-publish" );
 
 };
