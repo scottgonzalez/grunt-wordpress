@@ -12,16 +12,17 @@ grunt.registerHelper( "wordpress-get-terms", function( fn ) {
 	var client = grunt.helper( "wordpress-client" );
 
 	async.waterfall([
-		function getAllTaxonomies( fn ) {
+		function getTaxonomies( fn ) {
 			grunt.verbose.write( "Getting taxonomies from WordPress..." );
 			client.getTaxonomies( fn );
 		},
 
-		function getAllTerms( taxonomies, fn ) {
-			var all = {};
+		function getTerms( taxonomies, fn ) {
+			var existingTerms = {};
 			grunt.verbose.ok();
+
 			async.forEachSeries( taxonomies, function( taxonomy, fn ) {
-				all[ taxonomy.name ] = {};
+				existingTerms[ taxonomy.name ] = {};
 				grunt.verbose.write( "Getting " + taxonomy.name + " terms..." );
 				client.getTerms( taxonomy.name, function( error, terms ) {
 					var idMap = {};
@@ -47,7 +48,7 @@ grunt.registerHelper( "wordpress-get-terms", function( fn ) {
 					});
 
 					terms.forEach(function( term ) {
-						all[ taxonomy.name ][ expandSlug( term ) ] = term;
+						existingTerms[ taxonomy.name ][ expandSlug( term ) ] = term;
 					});
 					fn( null );
 				});
@@ -57,7 +58,7 @@ grunt.registerHelper( "wordpress-get-terms", function( fn ) {
 				}
 
 				grunt.verbose.writeln();
-				fn( null, all );
+				fn( null, existingTerms );
 			});
 		}
 	], fn );
@@ -97,6 +98,7 @@ grunt.registerHelper( "wordpress-publish-term", function( term, fn ) {
 grunt.registerHelper( "wordpress-delete-term", function( term, fn ) {
 	var client = grunt.helper( "wordpress-client" ),
 		name = prettyTermName( term );
+
 	grunt.verbose.write( "Deleting " + name + "..." );
 	client.deleteTerm( term.taxonomy, term.termId, function( error ) {
 		if ( error ) {
@@ -137,22 +139,29 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 			grunt.helper( "wordpress-get-terms", fn );
 		},
 
-		function publishTerms( existingTaxonomies, fn ) {
+		function publishTerms( existingTerms, fn ) {
+			var termMap = {};
+
+			grunt.verbose.writeln( "Processing terms.".bold );
 			async.forEachSeries( Object.keys( taxonomies ), function( taxonomy, fn ) {
 				// Taxonomies must already exist in WordPress
-				if ( !existingTaxonomies[ taxonomy ] ) {
+				if ( !existingTerms[ taxonomy ] ) {
 					grunt.log.error( "Taxonomies must exist in WordPress prior to use in taxonomies.json." );
 					return fn( new Error( "Invalid taxonomy: " + taxonomy ) );
 				}
 
+				grunt.verbose.writeln( ("Processing " + taxonomy + " terms.").bold );
+				termMap[ taxonomy ] = {};
+
 				function process( terms, parent, fn ) {
 					async.forEachSeries( terms, function( term, fn ) {
 						term.__slug = (parent ? parent.__slug + "/" : "") + term.slug;
-						if ( existingTaxonomies[ taxonomy ][ term.__slug ] ) {
-							term.termId = existingTaxonomies[ taxonomy ][ term.__slug ].termId;
+						if ( existingTerms[ taxonomy ][ term.__slug ] ) {
+							term.termId = existingTerms[ taxonomy ][ term.__slug ].termId;
 						}
 						term.taxonomy = taxonomy;
 						term.parent = parent ? parent.termId : null;
+
 						grunt.helper( "wordpress-publish-term", term, function( error, termId ) {
 							if ( error ) {
 								grunt.verbose.or.error( "Error processing " + prettyTermName( term ) + "." );
@@ -160,12 +169,13 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 							}
 
 							term.termId = termId;
+							termMap[ taxonomy ][ term.__slug ] = termId;
 							function done( error ) {
 								if ( error ) {
 									return fn( error );
 								}
 
-								delete existingTaxonomies[ taxonomy ][ term.__slug ];
+								delete existingTerms[ taxonomy ][ term.__slug ];
 								fn( null, termId );
 							}
 
@@ -182,7 +192,6 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 				}
 
 				// Process top level terms
-				grunt.verbose.writeln( "Processing terms.".bold );
 				process( taxonomies[ taxonomy ], null, fn );
 			}, function( error ) {
 				if ( error ) {
@@ -190,18 +199,18 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 				}
 
 				grunt.verbose.writeln();
-				fn( null, existingTaxonomies );
+				fn( null, termMap, existingTerms );
 			});
 		},
 
 		// TODO: Don't delete terms until after processing posts.
 		// This will allow us to use keywords without defining all of them upfront.
-		function deleteTerms( taxonomies, fn ) {
+		function deleteTerms( termMap, existingTerms, fn ) {
 			grunt.verbose.writeln( "Deleting old terms.".bold );
-			async.map( Object.keys( taxonomies ), function( taxonomyName, fn ) {
-				var taxonomy = taxonomies[ taxonomyName ];
-				async.forEachSeries( Object.keys( taxonomy ), function( term, fn ) {
-					grunt.helper( "wordpress-delete-term", taxonomy[ term ], fn );
+			async.map( Object.keys( existingTerms ), function( taxonomy, fn ) {
+				var terms = existingTerms[ taxonomy ];
+				async.forEachSeries( Object.keys( terms ), function( term, fn ) {
+					grunt.helper( "wordpress-delete-term", terms[ term ], fn );
 				}, fn );
 			}, function( error ) {
 				if ( error ) {
@@ -209,12 +218,10 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 				}
 
 				grunt.verbose.writeln();
-				fn( null );
+				fn( null, termMap );
 			});
 		}
-	], function( error ) {
-		fn( error );
-	});
+	], fn );
 });
 
 };

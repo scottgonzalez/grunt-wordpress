@@ -183,7 +183,12 @@ grunt.registerHelper( "wordpress-delete-post", function( postId, postPath, fn ) 
 	});
 });
 
-grunt.registerHelper( "wordpress-sync-posts", function( path, fn ) {
+grunt.registerHelper( "wordpress-sync-posts", function( path, termMap, fn ) {
+	if ( typeof termMap === "function" ) {
+		fn = termMap;
+		termMap = null;
+	}
+
 	async.waterfall([
 		function getPostPaths( fn ) {
 			grunt.helper( "wordpress-get-postpaths", fn );
@@ -194,12 +199,40 @@ grunt.registerHelper( "wordpress-sync-posts", function( path, fn ) {
 
 			grunt.verbose.writeln( "Publishing posts.".bold );
 			grunt.helper( "wordpress-walk-posts", path, function( post, fn ) {
+				var name = prettyName( post.__postPath );
 				post.id = postPaths[ post.__postPath ];
 				if ( !post.status ) {
 					post.status = "publish";
 				}
 				if ( post.__parent ) {
 					post.parent = postPaths[ post.__parent ] || posts[ post.__parent ];
+				}
+
+				// Convert term slugs to term ids
+				if ( post.termSlugs ) {
+					post.terms = {};
+					Object.keys( post.termSlugs ).forEach(function( taxonomy ) {
+						// Check if the taxonomy exists
+						if ( !termMap || !termMap[ taxonomy ] ) {
+							return fn( new Error(
+								name + " has '" + taxonomy + "' term slugs, " +
+								"but no such taxonomy exists." ) );
+						}
+
+						post.terms[ taxonomy ] = [];
+						post.termSlugs[ taxonomy ].forEach(function( slug ) {
+							var termId = termMap[ taxonomy ][ slug ];
+
+							// Check if the slug exists
+							if ( !termId ) {
+								return fn( new Error(
+									name + " has a " + taxonomy + " term slug of " +
+									"'" + slug + "', but no such term exists." ) );
+							}
+
+							post.terms[ taxonomy ].push( termId );
+						});
+					});
 				}
 
 				grunt.helper( "wordpress-publish-post", post, function( error, id ) {

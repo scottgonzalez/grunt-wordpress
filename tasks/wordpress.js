@@ -37,8 +37,8 @@ grunt.registerTask( "wordpress-publish", "Generate posts in WordPress from HTML 
 			grunt.helper( "wordpress-sync-terms", path.join( dir, "taxonomies.json" ), fn );
 		},
 
-		function syncPosts( fn ) {
-			grunt.helper( "wordpress-sync-posts", path.join( dir, "posts/" ), fn );
+		function syncPosts( termMap, fn ) {
+			grunt.helper( "wordpress-sync-posts", path.join( dir, "posts/" ), termMap, fn );
 		}
 	], function( error ) {
 		if ( !error ) {
