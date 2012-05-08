@@ -1,7 +1,7 @@
 {
 	"name": "grunt-wordpress",
 	"description": "Grunt plugin for publishing content to WordPress",
-	"version": "0.0.4",
+	"version": "0.1.0",
 	"homepage": "https://github.com/scottgonzalez/grunt-wordpress",
 	"author": {
 		"name": "Scott González",
