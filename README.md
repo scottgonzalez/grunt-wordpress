@@ -60,8 +60,6 @@ All custom post types are supported.
 The `resources` directory is completely freeform.
 Resources of any type will be uploaded based on the current directory structure.
 
-*Note: resources are not implemented yet.*
-
 ### taxonomies.json
 
 The `taxonomies.json` file defines all used taxonomy terms.
@@ -147,6 +145,17 @@ Simply create a `build` task that populates the `wordpress.dir` directory
 and your deployments will be as simple as `grunt wordpress-deploy`.
 
 ### Helpers
+
+#### wordpress-recurse( path, callback, complete )
+
+Walks through all files in `path` (asynchronous and in series ).
+
+* `path`: The directory to walk through.
+* `callbak` (`function( filepath, callback )`): Callback to invoke for each file.
+  * `filepath`: Path to the current file.
+  * `callback`: A callback to invoke after processing the file.
+  Passing an error will stop the helper.
+* `complete`: (`function( error )`): Callback to invoke after walking all files.
 
 #### wordpress-client()
 
@@ -236,6 +245,39 @@ Synchronizes all terms in `path` to the WordPress site. See [taxonomies.json](#t
 * `callback` (`function( error, termMap )`): Callback to invoke after synchronizing all terms.
    * `termMap`: Hash of hierarchical term slugs to term ids.
    Hierarchical term slugs are used for the `termSlugs` post data. See `wordpress-sync-posts`.
+
+#### wordpress-get-resources( callback )
+
+Gets the path and checksum for all existing resources in WordPress.
+
+* `callback` (`function( error, resources )` ): Callback to invoke after getting the resources.
+  * `resources`: A hash of resource paths to checksums.
+
+#### wordpress-publish-resource( path, content, callback )
+
+Publishes a resource to WordPress.
+Overwrites existing resources with the same path.
+
+* `path`: The path to publish the resource to (determiens URL).
+* `content`: Base 64 encoded file content.
+* `callback` (`function( error, checksum )`): Callback to invoke after publishing the resource.
+  * `checksum`: Checksum of the encoded content.
+
+#### wordpress-delete-resource( path, callback )
+
+Deletes a resource from WordPress.
+
+* `path`: The path of the resource to delete.
+* `callback`: (`function( error, checksum )`): Callback to invoke after deleting the resource.
+  * `checksum`: The checksum of the file that was deleted.
+  If the file did not exist, the checksum will be empty.
+
+#### wordpress-sync-resources( path, callback )
+
+Synchronizes all resources in `path` to the WordPRess site.
+
+* `path`: The directory containing resources to synchronize.
+* `callback` (`function( error )`): Callback to invoke after synchronizing all resources.
 
 ## License
 Copyright 2012 Scott González

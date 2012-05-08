@@ -3,20 +3,6 @@ module.exports = function( grunt ) {
 var path = require( "path" ),
 	async = grunt.utils.async;
 
-// Async directory recursion, always walks all files before recursing
-function recurse( rootdir, fn, complete ) {
-	var path = rootdir + "/*";
-	async.mapSeries( grunt.file.expandFiles( path ), fn, function( error ) {
-		if ( error ) {
-			return complete( error );
-		}
-
-		async.map( grunt.file.expandDirs( path ), function( dir, dirComplete ) {
-			recurse( dir, fn, dirComplete );
-		}, complete );
-	});
-}
-
 // Converts a postPath to a more readable name, e.g., "page/foo/bar" to "page foo/bar"
 function prettyName( postPath ) {
 	return postPath.replace( "/", " " );
@@ -38,7 +24,7 @@ grunt.registerHelper( "wordpress-get-postpaths", function( fn ) {
 });
 
 grunt.registerHelper( "wordpress-walk-posts", function( dir, walkFn, complete ) {
-	recurse( dir, function( file, fn ) {
+	grunt.helper( "wordpress-recurse", dir, function( file, fn ) {
 		var postPath = file.substr( dir.length, file.length - dir.length - 5 ),
 			parts = postPath.split( "/" ),
 			name = parts.pop(),

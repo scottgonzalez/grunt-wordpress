@@ -12,11 +12,26 @@ module.exports = function( grunt ) {
 
 require( grunt.task.getFile( "wordpress/posts.js" ) )( grunt );
 require( grunt.task.getFile( "wordpress/taxonomies.js" ) )( grunt );
+require( grunt.task.getFile( "wordpress/resources.js" ) )( grunt );
 
 var _client,
 	path = require( "path" ),
 	wordpress = require( "wordpress" ),
 	async = grunt.utils.async;
+
+// Async directory recursion, always walks all files before recursing
+grunt.registerHelper( "wordpress-recurse", function recurse( rootdir, fn, complete ) {
+	var path = rootdir + "/*";
+	async.mapSeries( grunt.file.expandFiles( path ), fn, function( error ) {
+		if ( error ) {
+			return complete( error );
+		}
+
+		async.map( grunt.file.expandDirs( path ), function( dir, dirComplete ) {
+			recurse( dir, fn, dirComplete );
+		}, complete );
+	});
+});
 
 grunt.registerHelper( "wordpress-client", function() {
 	if ( !_client ) {
@@ -39,6 +54,10 @@ grunt.registerTask( "wordpress-sync", "Synchronize WordPress with local content"
 
 		function syncPosts( termMap, fn ) {
 			grunt.helper( "wordpress-sync-posts", path.join( dir, "posts/" ), termMap, fn );
+		},
+
+		function syncResources( fn ) {
+			grunt.helper( "wordpress-sync-resources", path.join( dir, "resources/" ), fn );
 		}
 	], function( error ) {
 		if ( !error ) {
