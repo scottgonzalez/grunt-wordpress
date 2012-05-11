@@ -1,11 +1,47 @@
 module.exports = function( grunt ) {
 
 var path = require( "path" ),
+	util = require( "util" ),
+	crypto = require( "crypto" ),
 	async = grunt.utils.async;
 
 // Converts a postPath to a more readable name, e.g., "page/foo/bar" to "page foo/bar"
 function prettyName( postPath ) {
 	return postPath.replace( "/", " " );
+}
+
+function flatten( obj ) {
+	if ( obj == null ) {
+		return "";
+	}
+
+	if ( typeof obj === "string" ) {
+		return obj;
+	}
+
+	if ( typeof obj === "number" ) {
+		return String( obj );
+	}
+
+	if ( util.isDate( obj ) ) {
+		return obj.toGMTString();
+	}
+
+	if ( util.isArray( obj ) ) {
+		return obj.map(function( item ) {
+			return flatten( item );
+		}).join( "," );
+	}
+
+	return Object.keys( obj ).sort().map(function( prop ) {
+		return prop + ":" + flatten( obj[ prop ] );
+	}).join( ";" );
+}
+
+function createChecksum( obj ) {
+	var md5 = crypto.createHash( "md5" );
+	md5.update( flatten( obj ), "utf8" );
+	return md5.digest( "hex" );
 }
 
 grunt.registerHelper( "wordpress-get-postpaths", function( fn ) {
@@ -185,13 +221,25 @@ grunt.registerHelper( "wordpress-sync-posts", function( path, termMap, fn ) {
 
 			grunt.verbose.writeln( "Publishing posts.".bold );
 			grunt.helper( "wordpress-walk-posts", path, function( post, fn ) {
-				var name = prettyName( post.__postPath );
-				post.id = postPaths[ post.__postPath ];
+				var checksum,
+					existingPost = postPaths[ post.__postPath ],
+					name = prettyName( post.__postPath );
+
+				function complete( error, id ) {
+					if ( error ) {
+						return fn( error );
+					}
+
+					posts[ post.__postPath ] = id;
+					delete postPaths[ post.__postPath ];
+					fn( null );
+				}
+
 				if ( !post.status ) {
 					post.status = "publish";
 				}
 				if ( post.__parent ) {
-					post.parent = postPaths[ post.__parent ] || posts[ post.__parent ];
+					post.parent = posts[ post.__parent ];
 				}
 
 				// Convert term slugs to term ids
@@ -221,15 +269,27 @@ grunt.registerHelper( "wordpress-sync-posts", function( path, termMap, fn ) {
 					});
 				}
 
-				grunt.helper( "wordpress-publish-post", post, function( error, id ) {
-					if ( error ) {
-						return fn( error );
-					}
+				// If the post exists and hasn't changed, then there's nothing to do.
+				checksum = createChecksum( post );
+				if ( existingPost ) {
+					// Don't add the id until after creating the checksum. This allows us
+					// to create the same checksum when creating and editing.
+					post.id = existingPost.id;
 
-					posts[ post.__postPath ] = id;
-					delete postPaths[ post.__postPath ];
-					fn( null );
+					if ( existingPost.checksum === checksum ) {
+						grunt.verbose.writeln( "Skipping " + name + "; already up-to-date." );
+						return complete( null, post.id );
+					}
+				}
+
+				// Add a checksum so we can determine when a post has been edited
+				post.customFields = post.customFields || [];
+				post.customFields.push({
+					key: "gwcs",
+					value: checksum
 				});
+
+				grunt.helper( "wordpress-publish-post", post, complete );
 			}, function( error ) {
 				if ( error ) {
 					return fn( error );
@@ -243,7 +303,7 @@ grunt.registerHelper( "wordpress-sync-posts", function( path, termMap, fn ) {
 		function deletePosts( postPaths, fn ) {
 			grunt.verbose.writeln( "Deleting old posts.".bold );
 			async.map( Object.keys( postPaths ), function( postPath, fn ) {
-				grunt.helper( "wordpress-delete-post", postPaths[ postPath ], postPath, fn );
+				grunt.helper( "wordpress-delete-post", postPaths[ postPath ].id, postPath, fn );
 			}, function( error ) {
 				if ( error ) {
 					return fn( error );

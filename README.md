@@ -167,7 +167,7 @@ Gets the post paths for all existing posts in WordPress.
 Post paths are the unique identifiers used by grunt-wordpress.
 
 * `callback` (`function( error, postPaths )` ): Callback to invoke after getting the post paths.
-  * `postPaths`: A hash of post paths to post ids.
+  * `postPaths`: A hash of post paths to post ids and checksums.
 
 #### wordpress-walk-posts( path, callback, complete )
 

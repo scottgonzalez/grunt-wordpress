@@ -38,7 +38,6 @@ grunt.registerHelper( "wordpress-client", function() {
 	return _client;
 });
 
-// TODO: Smarter updates (compare checksums and only republish if there were changes)
 grunt.registerTask( "wordpress-sync", "Synchronize WordPress with local content", function() {
 	this.requires( "wordpress-validate" );
 
