@@ -8,8 +8,6 @@
 
 module.exports = function( grunt ) {
 
-// TODO: support for static resources (requires new XML-RPC method)
-
 require( grunt.task.getFile( "wordpress/posts.js" ) )( grunt );
 require( grunt.task.getFile( "wordpress/taxonomies.js" ) )( grunt );
 require( grunt.task.getFile( "wordpress/resources.js" ) )( grunt );
