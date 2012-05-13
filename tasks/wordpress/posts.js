@@ -76,6 +76,7 @@ grunt.registerHelper( "wordpress-walk-posts", function( dir, walkFn, complete ) 
 		post.name = name;
 		post.__parent = parent;
 		post.__postPath = postPath;
+		post.__file = file;
 
 		walkFn( post, fn );
 	}, complete );
@@ -102,6 +103,49 @@ grunt.registerHelper( "wordpress-parse-post", function( path ) {
 
 	post.content = content;
 	return post;
+});
+
+grunt.registerHelper( "wordpress-validate-posts", function( dir, fn ) {
+	var count = 0,
+		postPaths = {};
+
+	grunt.helper( "wordpress-walk-posts", dir, function( post, fn ) {
+		// If there's a problem parsing the content of the file, then wordpress-walk-posts
+		// will return an error and we'll automatically stop walking. So we know that the
+		// content and structure of the metadata is already valid.
+		var file = post.__file;
+
+		postPaths[ post.__postPath ] = true;
+
+		// Verify file extension
+		if ( file.substr( file.length - 5 ) !== ".html" ) {
+			return fn( new Error( "Invalid file extension for " + file + "; must be .html." ) );
+		}
+
+		// Verify parent
+		if ( post.__parent && !postPaths[ post.__parent ] ) {
+			return fn( new Error( file + " does not have a parent." ) );
+		}
+
+		// Verify required data
+		if ( !post.title ) {
+			return fn( new Error( file + " is missing required data: title" ) );
+		}
+
+		count++;
+		fn( null );
+	}, function( error ) {
+		if ( error ) {
+			grunt.log.error( error );
+			return fn( error );
+		}
+
+		var msg = "Validated " + (count === 1 ?
+			"one post" :
+			(count + " posts"));
+		grunt.log.writeln( msg );
+		fn( null );
+	});
 });
 
 // Publish (create or update) a post to WordPress.

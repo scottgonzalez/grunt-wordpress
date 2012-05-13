@@ -15,7 +15,8 @@ require( grunt.task.getFile( "wordpress/resources.js" ) )( grunt );
 var _client,
 	path = require( "path" ),
 	wordpress = require( "wordpress" ),
-	async = grunt.utils.async;
+	async = grunt.utils.async,
+	version = require( "../package" ).version;
 
 // Async directory recursion, always walks all files before recursing
 grunt.registerHelper( "wordpress-recurse", function recurse( rootdir, fn, complete ) {
@@ -36,6 +37,30 @@ grunt.registerHelper( "wordpress-client", function() {
 		_client = wordpress.createClient( grunt.config( "wordpress" ) );
 	}
 	return _client;
+});
+
+grunt.registerHelper( "wordpress-validate-xmlrpc-version", function( fn ) {
+	var client = grunt.helper( "wordpress-client" );
+	grunt.verbose.write( "Verifying XML-RPC version..." );
+	client.call( "gw.getVersion", function( error, xmlrpcVersion ) {
+		if ( error ) {
+			grunt.verbose.error();
+			if ( error.code === -32601 ) {
+				return fn( new Error(
+					"XML-RPC extensions for grunt-wordpress are not installed." ) );
+			}
+
+			return fn( error );
+		}
+
+		if ( xmlrpcVersion !== version ) {
+			return fn( new Error( "Mismatching versions. " +
+				"grunt-wordpress: " + version + "; XML-RPC version: " + xmlrpcVersion ) );
+		}
+
+		grunt.verbose.ok();
+		fn( null );
+	});
 });
 
 grunt.registerTask( "wordpress-sync", "Synchronize WordPress with local content", function() {
@@ -73,32 +98,29 @@ grunt.registerTask( "wordpress-sync", "Synchronize WordPress with local content"
 
 grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing WordPress", function() {
 	var done = this.async(),
-		dir = grunt.config( "wordpress.dir" ),
-		count = 0;
+		dir = grunt.config( "wordpress.dir" );
 
 	// TODO:
-	// - Verify that all child posts actually have parents
-	//    - All directories must have a matching file
-	// - Verify that all files have .html extension
-	// - Verify required metadata
-	//    - Title, anything else?
-	// - Verify gw.getPostPaths exists
-	// - Verify that jQuery Slugs plugin exists
+	// - Verify that jQuery Slugs plugin exists (should really merge into gw)
 	// - Verify taxonomies.json
 	//    - Requires name, slug
 	//    - Slug must be [a-z0-9.-], no consecutive dashes
 	//    - Check for existing terms with same name, but different slug
 
-	grunt.helper( "wordpress-walk-posts", path.join( dir, "posts/" ), function( post, fn ) {
-		count++;
-		fn( null );
-	}, function( error ) {
+	async.waterfall([
+		function( fn ) {
+			grunt.helper( "wordpress-validate-xmlrpc-version", fn );
+		},
+
+		function( fn ) {
+			grunt.helper( "wordpress-validate-posts", path.join( dir, "posts/" ), fn );
+		}
+	], function( error ) {
 		if ( error ) {
 			grunt.log.error( error );
 			return done( false );
 		}
 
-		grunt.log.writeln( "Validated " + count + " files." );
 		done();
 	});
 });

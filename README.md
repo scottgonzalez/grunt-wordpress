@@ -122,7 +122,7 @@ Walks through the `wordpress.dir` directory and performs various validations, su
 * Verifying that child-parent relationships for posts are valid.
 * Verifying metadata for each post.
 
-*Note: most of the validation is not implemented yet.*
+*Note: some of the validation is not implemented yet.*
 
 #### wordpress-sync
 
@@ -160,6 +160,17 @@ Walks through all files in `path` (asynchronous and in series ).
 #### wordpress-client()
 
 Gets a client for connecting to the WordPress site via XML-RPC.
+
+#### wordpress-validate-xmlrpc-version( callback )
+
+Verifies that the XML-RPC extensions for grunt-wordpress are installed in WordPress.
+
+* `callback` (`function( error )`): Callback to invoke after verifying.
+
+#### wordpress-validate-posts( path, callback )
+
+* `path`: The directory of posts to validate.
+* `callback` (`function( error )`): Callback to invoke after validating the posts.
 
 #### wordpress-get-postpaths( callback )
 
