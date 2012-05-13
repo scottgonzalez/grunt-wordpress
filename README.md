@@ -139,9 +139,9 @@ or if you want to manually verify generated content between your custom build an
 
 #### wordpress-deploy
 
-Alias task for `build` and `wordpress-publish`.
+Alias task for `build-wordpress` and `wordpress-publish`.
 This is useful if you are generating content for use with `wordpess-sync`.
-Simply create a `build` task that populates the `wordpress.dir` directory
+Simply create a `build-wordpress` task that populates the `wordpress.dir` directory
 and your deployments will be as simple as `grunt wordpress-deploy`.
 
 ### Helpers
