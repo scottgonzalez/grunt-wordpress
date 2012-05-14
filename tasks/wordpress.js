@@ -42,7 +42,7 @@ grunt.registerHelper( "wordpress-client", function() {
 grunt.registerHelper( "wordpress-validate-xmlrpc-version", function( fn ) {
 	var client = grunt.helper( "wordpress-client" );
 	grunt.verbose.write( "Verifying XML-RPC version..." );
-	client.call( "gw.getVersion", function( error, xmlrpcVersion ) {
+	client.authenticatedCall( "gw.getVersion", function( error, xmlrpcVersion ) {
 		if ( error ) {
 			grunt.verbose.error();
 			if ( error.code === -32601 ) {
@@ -50,6 +50,8 @@ grunt.registerHelper( "wordpress-validate-xmlrpc-version", function( fn ) {
 					"XML-RPC extensions for grunt-wordpress are not installed." ) );
 			}
 
+			// XML-RPC is disabled or bad credentials
+			// WordPress provides good error messages, so we don't do any special handling
 			return fn( error );
 		}
 
