@@ -8,6 +8,61 @@ function prettyTermName( term ) {
 	return term.taxonomy + " " + term.slug;
 }
 
+// TODO: Check for existing terms with same name, but different slug
+grunt.registerHelper( "wordpress-validate-terms", function( filepath, fn ) {
+	var taxonomies,
+		client = grunt.helper( "wordpress-client" ),
+		count = 0;
+
+	function complete() {
+		grunt.log.writeln( "Validated " + count + " terms." );
+		fn( null );
+	}
+
+	if ( !path.existsSync( filepath ) ) {
+		return complete();
+	}
+
+	// Check if the taxonomies JSON format is valid
+	try {
+		taxonomies = grunt.file.readJSON( filepath );
+	} catch( error ) {
+		grunt.log.error( "Invalid taxonomy definitions file." );
+		return fn( error );
+	}
+
+	async.forEachSeries( Object.keys( taxonomies ), function( taxonomy, fn ) {
+		function process( terms, fn ) {
+			async.forEachSeries( terms, function( term, fn ) {
+				if ( !term.name ) {
+					return fn( new Error( "A " + taxonomy + " term has no name." ) );
+				}
+				if ( !term.slug ) {
+					return fn( new Error( "The " + taxonomy + " term " + term.name + " has no slug." ) );
+				}
+				if ( !(/^([a-zA-Z0-9]+[.\-]?)+$/).test( term.slug ) ) {
+					return fn( new Error( "Invalid slug: " + term.slug + "." ) );
+				}
+
+				count++;
+				if ( term.children ) {
+					return process( term.children, fn );
+				}
+
+				fn( null );
+			}, fn );
+		}
+
+		process( taxonomies[ taxonomy ], fn );
+	}, function( error ) {
+		if ( error ) {
+			return fn( error );
+		}
+
+		complete();
+	});
+});
+
 grunt.registerHelper( "wordpress-get-terms", function( fn ) {
 	var client = grunt.helper( "wordpress-client" );
 

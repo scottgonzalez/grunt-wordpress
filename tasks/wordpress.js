@@ -104,14 +104,14 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing
 
 	// TODO:
 	// - Verify that jQuery Slugs plugin exists (should really merge into gw)
-	// - Verify taxonomies.json
-	//    - Requires name, slug
-	//    - Slug must be [a-z0-9.-], no consecutive dashes
-	//    - Check for existing terms with same name, but different slug
 
 	async.waterfall([
 		function( fn ) {
 			grunt.helper( "wordpress-validate-xmlrpc-version", fn );
+		},
+
+		function( fn ) {
+			grunt.helper( "wordpress-validate-terms", path.join( dir, "taxonomies.json" ), fn );
 		},
 
 		function( fn ) {

@@ -115,14 +115,11 @@ The post type and parent are determined based on the [directory structure](#dire
 
 Walks through the `wordpress.dir` directory and performs various validations, such as:
 
-<!-- TODO: update list when validation is implemented -->
 * Verifying that XML-RPC is enabled for the WordPress site.
 * Verifying that the custom XML-RPC methods for grunt-wordpress are installed.
 * Verifying the taxonomies and terms in `taxonomies.json`.
 * Verifying that child-parent relationships for posts are valid.
-* Verifying metadata for each post.
-
-*Note: some of the validation is not implemented yet.*
+* Verifying data for each post.
 
 #### wordpress-sync
 
@@ -166,6 +163,11 @@ Gets a client for connecting to the WordPress site via XML-RPC.
 Verifies that the XML-RPC extensions for grunt-wordpress are installed in WordPress.
 
 * `callback` (`function( error )`): Callback to invoke after verifying.
+
+#### wordpress-validate-terms( path, callback )
+
+* `path`: The path to the taxonomies JSON file.
+* `callback` (`function( error )`): Callback to invoke after validating the terms.
 
 #### wordpress-validate-posts( path, callback )
 
