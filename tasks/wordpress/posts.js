@@ -141,8 +141,8 @@ grunt.registerHelper( "wordpress-validate-posts", function( dir, fn ) {
 		}
 
 		var msg = "Validated " + (count === 1 ?
-			"one post" :
-			(count + " posts"));
+			"one post." :
+			(count + " posts."));
 		grunt.log.writeln( msg );
 		fn( null );
 	});

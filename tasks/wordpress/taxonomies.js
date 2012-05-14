@@ -15,7 +15,10 @@ grunt.registerHelper( "wordpress-validate-terms", function( filepath, fn ) {
 		count = 0;
 
 	function complete() {
-		grunt.log.writeln( "Validated " + count + " terms." );
+		var msg = "Validated " + (count === 1 ?
+			"one term." :
+			(count + " terms."));
+		grunt.log.writeln( msg );
 		fn( null );
 	}
 
