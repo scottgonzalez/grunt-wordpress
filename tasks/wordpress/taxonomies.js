@@ -8,7 +8,6 @@ function prettyTermName( term ) {
 	return term.taxonomy + " " + term.slug;
 }
 
-// TODO: Check for existing terms with same name, but different slug
 grunt.registerHelper( "wordpress-validate-terms", function( filepath, fn ) {
 	var taxonomies,
 		client = grunt.helper( "wordpress-client" ),
@@ -36,9 +35,13 @@ grunt.registerHelper( "wordpress-validate-terms", function( filepath, fn ) {
 
 	async.forEachSeries( Object.keys( taxonomies ), function( taxonomy, fn ) {
 		function process( terms, fn ) {
+			var termNames = [];
 			async.forEachSeries( terms, function( term, fn ) {
 				if ( !term.name ) {
 					return fn( new Error( "A " + taxonomy + " term has no name." ) );
+				}
+				if ( termNames.indexOf( term.name ) !== -1 ) {
+					return fn( new Error( "There are multiple " + taxonomy + " " + term.name + " terms." ) );
 				}
 				if ( !term.slug ) {
 					return fn( new Error( "The " + taxonomy + " term " + term.name + " has no slug." ) );
@@ -47,6 +50,7 @@ grunt.registerHelper( "wordpress-validate-terms", function( filepath, fn ) {
 					return fn( new Error( "Invalid slug: " + term.slug + "." ) );
 				}
 
+				termNames.push( term.name );
 				count++;
 				if ( term.children ) {
 					return process( term.children, fn );
@@ -217,6 +221,7 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 						if ( existingTerms[ taxonomy ][ term.__slug ] ) {
 							term.termId = existingTerms[ taxonomy ][ term.__slug ].termId;
 						}
+						// TODO: check if a term with the same name already exists
 						term.taxonomy = taxonomy;
 						term.parent = parent ? parent.termId : null;
 
