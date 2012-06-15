@@ -102,9 +102,6 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing
 	var done = this.async(),
 		dir = grunt.config( "wordpress.dir" );
 
-	// TODO:
-	// - Verify that jQuery Slugs plugin exists (should really merge into gw)
-
 	async.waterfall([
 		function( fn ) {
 			grunt.helper( "wordpress-validate-xmlrpc-version", fn );
