@@ -129,5 +129,6 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing
 
 grunt.registerTask( "wordpress-publish", "wordpress-validate wordpress-sync" );
 grunt.registerTask( "wordpress-deploy", "build-wordpress wordpress-publish" );
+grunt.registerTask( "deploy", "wordpress-deploy" );
 
 };

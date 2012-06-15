@@ -16,7 +16,7 @@ grunt.loadNpmTasks( "grunt-wordpress" );
 ## API
 
 For most projects, you should only need to specify the `wordpress` config
-and use the `wordpress-deploy` task.
+and use the `wordpress-deploy` task (or its alias `deploy`).
 
 ### Config
 
@@ -140,6 +140,13 @@ Alias task for `build-wordpress` and `wordpress-publish`.
 This is useful if you are generating content for use with `wordpess-sync`.
 Simply create a `build-wordpress` task that populates the `wordpress.dir` directory
 and your deployments will be as simple as `grunt wordpress-deploy`.
+
+#### deploy
+
+Alias task for `wordpress-deploy`.
+Since most projects that use grunt-wordpress only have one deploy target (WordPress),
+there is a built-in `deploy` task that just runs `wordpress-deploy`.
+If your project has multiple deploy targets, you can simply re-alias the `deploy` task.
 
 ### Helpers
 
