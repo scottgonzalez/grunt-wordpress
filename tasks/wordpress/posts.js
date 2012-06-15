@@ -220,7 +220,6 @@ grunt.registerHelper( "wordpress-publish-post", function( post, fn ) {
 	}
 });
 
-// TODO: this signature is kinda ghetto
 grunt.registerHelper( "wordpress-delete-post", function( postId, postPath, fn ) {
 	var client = grunt.helper( "wordpress-client" ),
 		name = prettyName( postPath );
