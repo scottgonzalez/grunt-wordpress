@@ -63,7 +63,7 @@ grunt.registerHelper( "wordpress-sync-resources", function( dir, fn ) {
 	grunt.verbose.writeln( "Synchronizing resources.".bold );
 
 	// Check if there are any resources to process
-	if ( !path.existsSync( dir ) ) {
+	if ( !fs.existsSync( dir ) ) {
 		grunt.verbose.writeln( "No resources to process." );
 		grunt.verbose.writeln();
 		return fn( null );
