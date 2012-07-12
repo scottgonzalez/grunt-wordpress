@@ -32,9 +32,18 @@ grunt.registerHelper( "wordpress-recurse", function recurse( rootdir, fn, comple
 	});
 });
 
+function config() {
+	var target = grunt.config( "target" ) || grunt.config( "wordpress._default" ),
+		base = grunt.config( "wordpress" );
+	if ( target ) {
+		return base[ target ];
+	}
+	return base;
+}
+
 grunt.registerHelper( "wordpress-client", function() {
 	if ( !_client ) {
-		_client = wordpress.createClient( grunt.config( "wordpress" ) );
+		_client = wordpress.createClient( config() );
 	}
 	return _client;
 });
@@ -122,6 +131,10 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing
 
 		done();
 	});
+});
+
+grunt.registerTask( "target", "Runtime configuration to choose deployment target", function( target ) {
+	grunt.config.set( "target", target );
 });
 
 grunt.registerTask( "wordpress-publish", "wordpress-validate wordpress-sync" );
