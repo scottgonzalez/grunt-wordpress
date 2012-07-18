@@ -1,8 +1,11 @@
 module.exports = function( grunt ) {
 
-var path = require( "path" ),
+var fs = require( "fs" ),
+	path = require( "path" ),
 	crypto = require( "crypto" ),
-	async = grunt.utils.async;
+	async = grunt.utils.async,
+	// support: node <0.8
+	existsSync = fs.existsSync || path.existsSync;
 
 function createChecksum( str ) {
 	var md5 = crypto.createHash( "md5" );
@@ -64,7 +67,7 @@ grunt.registerHelper( "wordpress-sync-resources", function( dir, fn ) {
 	grunt.verbose.writeln( "Synchronizing resources.".bold );
 
 	// Check if there are any resources to process
-	if ( !path.existsSync( dir ) ) {
+	if ( !existsSync( dir ) ) {
 		grunt.verbose.writeln( "No resources to process." );
 		grunt.verbose.writeln();
 		return fn( null );

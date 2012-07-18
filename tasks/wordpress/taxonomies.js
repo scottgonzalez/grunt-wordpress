@@ -1,7 +1,10 @@
 module.exports = function( grunt ) {
 
-var path = require( "path" ),
-	async = grunt.utils.async;
+var fs = require( "fs" ),
+	path = require( "path" ),
+	async = grunt.utils.async,
+	// support: node <0.8
+	existsSync = fs.existsSync || path.existsSync;
 
 // Converts a term to a readable name, e.g., { taxonomy: "foo", slug: "bar" } to "foo bar"
 function prettyTermName( term ) {
@@ -21,7 +24,7 @@ grunt.registerHelper( "wordpress-validate-terms", function( filepath, fn ) {
 		fn( null );
 	}
 
-	if ( !path.existsSync( filepath ) ) {
+	if ( !existsSync( filepath ) ) {
 		return complete();
 	}
 
@@ -182,7 +185,7 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 	grunt.verbose.writeln( "Synchronizing terms.".bold );
 
 	// Check if there are any terms to process
-	if ( !path.existsSync( filepath ) ) {
+	if ( !existsSync( filepath ) ) {
 		grunt.verbose.writeln( "No terms to process." );
 		grunt.verbose.writeln();
 		return fn( null );
