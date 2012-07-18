@@ -21,7 +21,7 @@ grunt.registerHelper( "wordpress-validate-terms", function( filepath, fn ) {
 		fn( null );
 	}
 
-	if ( !path.existsSync( filepath ) ) {
+	if ( !fs.existsSync( filepath ) ) {
 		return complete();
 	}
 
@@ -182,7 +182,7 @@ grunt.registerHelper( "wordpress-sync-terms", function( filepath, fn ) {
 	grunt.verbose.writeln( "Synchronizing terms.".bold );
 
 	// Check if there are any terms to process
-	if ( !path.existsSync( filepath ) ) {
+	if ( !fs.existsSync( filepath ) ) {
 		grunt.verbose.writeln( "No terms to process." );
 		grunt.verbose.writeln();
 		return fn( null );
