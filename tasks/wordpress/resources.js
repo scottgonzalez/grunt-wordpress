@@ -55,6 +55,7 @@ grunt.registerHelper( "wordpress-delete-resource", function( filepath, fn ) {
 		}
 
 		grunt.verbose.ok();
+		grunt.verbose.or.writeln( "Deleted " + filepath + "." );
 		fn( null, checksum );
 	});
 });
