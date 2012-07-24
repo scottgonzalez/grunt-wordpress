@@ -11,6 +11,7 @@ module.exports = function( grunt ) {
 require( grunt.task.getFile( "wordpress/posts.js" ) )( grunt );
 require( grunt.task.getFile( "wordpress/taxonomies.js" ) )( grunt );
 require( grunt.task.getFile( "wordpress/resources.js" ) )( grunt );
+require( grunt.task.getFile( "wordpress/users.js" ) )( grunt );
 
 var _client,
 	path = require( "path" ),
