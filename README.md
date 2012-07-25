@@ -78,7 +78,8 @@ dir
 │       └── <post_name>.html
 ├── resources
 │   └── <file>.<ext>
-└── taxonomies.json
+├── taxonomies.json
+└── users.json
 ```
 
 The `posts` directory must only contain `<post_type>` directories.
@@ -116,6 +117,40 @@ You can only manage terms, all taxonomies much already exist in WordPress.
 ```
 
 Slugs and names are required.
+
+### users.json
+
+The `users.json` file provides a list of users who should have accounts in WordPress. Users
+defined in this file will be created or updated on the server. Users on the server that do
+not exist in this file will be disabled by setting their role to "subscriber".
+
+**Note:** in order to use this task the [XML-RPC Modernization][plugin] must be installed.
+
+[plugin]: http://wordpress.org/extend/plugins/xml-rpc-modernization/
+
+The user account being used to access the XML-RPC API will not be modified by this task.
+
+Accounts that are created for the first time will be assigned a random password. WordPress
+will send an email with the provided password to the specified email address for the user.
+
+The format of `users.json` is an array of objects that define user properties. Each user
+must have a `username` and `email`. The rest are optional fields.
+
+```json
+[
+  {
+    "username":"person1",
+    "email":"person@example.com",
+    "first_name":"Rick",
+    "last_name":"Deckard",
+    "url":"http://example.com",
+    "display_name":"Rick",
+    "nickname":"Rick",
+    "nicename":"rick",
+    "bio":"Nice guy"
+  }
+]
+```
 
 ### Post Files
 
@@ -175,6 +210,14 @@ Alias task for `wordpress-deploy`.
 Since most projects that use grunt-wordpress only have one deploy target (WordPress),
 there is a built-in `deploy` task that just runs `wordpress-deploy`.
 If your project has multiple deploy targets, you can simply re-alias the `deploy` task.
+
+#### wordpress-sync-users
+
+Syncs the `users.json` file with the users on the server. Users in the file that do not have
+accounts will have one created for them. Accounts that exist will have their information updated
+to match the properties in the `users.json` file. Accounts on the server that are not present
+in the `users.json` file will be disabled by having their role set to "subscriber" (this prevents
+any posts associated with the user from being deleted).
 
 ### Helpers
 
