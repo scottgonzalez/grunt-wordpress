@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/scottgonzalez/grunt-wordpress.png)](http://travis-ci.org/scottgonzalez/grunt-wordpress)
 # grunt-wordpress
 
 Grunt plugin for publishing content to WordPress
