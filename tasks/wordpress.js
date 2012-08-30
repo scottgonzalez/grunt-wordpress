@@ -54,9 +54,18 @@ grunt.registerHelper( "wordpress-validate-xmlrpc-version", function( fn ) {
 	client.authenticatedCall( "gw.getVersion", function( error, xmlrpcVersion ) {
 		if ( error ) {
 			grunt.verbose.error();
+
+			if ( error.code === "ECONNREFUSED" ) {
+				return fn( new Error( "Could not connect to WordPress." ) );
+			}
 			if ( error.code === -32601 ) {
 				return fn( new Error(
 					"XML-RPC extensions for grunt-wordpress are not installed." ) );
+			}
+			if ( !error.code ) {
+				return fn( new Error( "Unknown error. " +
+					"Please ensure that your database server is running " +
+					"and WordPress is functioning properly." ) );
 			}
 
 			// XML-RPC is disabled or bad credentials
