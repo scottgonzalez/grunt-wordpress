@@ -3,6 +3,7 @@
 Grunt plugin for publishing content to WordPress
 
 ## Getting Started
+
 Install this grunt plugin next to your project's
 [grunt.js gruntfile](https://github.com/cowboy/grunt/blob/master/docs/getting_started.md)
 with: `npm install grunt-wordpress`
@@ -12,6 +13,8 @@ Then add this line to your project's `grunt.js` gruntfile:
 ```javascript
 grunt.loadNpmTasks( "grunt-wordpress" );
 ```
+
+Finally, copy `grunt-wordpress.js` in to your WordPress install as a plugin.
 
 ## API
 
