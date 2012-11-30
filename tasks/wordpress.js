@@ -21,12 +21,12 @@ var _client,
 // Async directory recursion, always walks all files before recursing
 grunt.registerHelper( "wordpress-recurse", function recurse( rootdir, fn, complete ) {
 	var path = rootdir + "/*";
-	async.mapSeries( grunt.file.expandFiles( path ), fn, function( error ) {
+	async.forEachSeries( grunt.file.expandFiles( path ), fn, function( error ) {
 		if ( error ) {
 			return complete( error );
 		}
 
-		async.map( grunt.file.expandDirs( path ), function( dir, dirComplete ) {
+		async.forEachSeries( grunt.file.expandDirs( path ), function( dir, dirComplete ) {
 			recurse( dir, fn, dirComplete );
 		}, complete );
 	});
