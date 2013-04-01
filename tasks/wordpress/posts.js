@@ -94,6 +94,12 @@ grunt.registerHelper( "wordpress-parse-post", function( path ) {
 		try {
 			index = content.indexOf( "</script>" );
 			post = JSON.parse( content.substr( 8, index - 8 ) );
+			if ( "date" in post ) {
+				post.date = new Date( post.date );
+			}
+			if ( "modified" in post ) {
+				post.modified = new Date( post.modified );
+			}
 			content = content.substr( index + 9 );
 		} catch( error ) {
 			grunt.log.error( "Invalid JSON metadata for " + path );
