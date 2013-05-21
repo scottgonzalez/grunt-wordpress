@@ -2,7 +2,7 @@
  * grunt-wordpress
  * https://github.com/scottgonzalez/grunt-wordpress
  *
- * Copyright (c) 2012 Scott González
+ * Copyright (c) 2013 Scott González
  * Licensed under the MIT license.
  */
 
