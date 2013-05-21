@@ -14,7 +14,7 @@ Then add this line to your project's `grunt.js` gruntfile:
 grunt.loadNpmTasks( "grunt-wordpress" );
 ```
 
-Finally, copy `grunt-wordpress.js` in to your WordPress install as a plugin.
+Finally, copy `grunt-wordpress.php` in to your WordPress install as a plugin.
 
 Resources are uploaded to `/gw-resources/{HOST_NAME}/`, so if you'd like a
 friendlier name, you'll need to setup a redirect in your web server.
