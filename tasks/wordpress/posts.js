@@ -1,9 +1,10 @@
 module.exports = function( grunt ) {
 
 var path = require( "path" ),
-	util = require( "util" ),
+	util	 = require( "util" ),
 	crypto = require( "crypto" ),
-	async = grunt.utils.async;
+	marked = require( "marked" ),
+	async  = grunt.utils.async;
 
 // Converts a postPath to a more readable name, e.g., "page/foo/bar" to "page foo/bar"
 function prettyName( postPath ) {
@@ -44,6 +45,18 @@ function createChecksum( obj ) {
 	return md5.digest( "hex" );
 }
 
+function parsePostJSON( post ) {
+	if ( "date" in post ) {
+		post.date = new Date( post.date );
+	}
+	if ( "modified" in post ) {
+		post.modified = new Date( post.modified );
+	}
+
+	return post;
+}
+
+
 grunt.registerHelper( "wordpress-get-postpaths", function( fn ) {
 	var client = grunt.helper( "wordpress-client" );
 	grunt.verbose.write( "Getting post paths from WordPress..." );
@@ -61,7 +74,8 @@ grunt.registerHelper( "wordpress-get-postpaths", function( fn ) {
 
 grunt.registerHelper( "wordpress-walk-posts", function( dir, walkFn, complete ) {
 	grunt.helper( "wordpress-recurse", dir, function( file, fn ) {
-		var postPath = file.substr( dir.length, file.length - dir.length - 5 ),
+		var file_extension = path.extname( file );
+		var postPath = file.substr( dir.length, file.length - dir.length - file_extension.length ),
 			parts = postPath.split( "/" ),
 			name = parts.pop(),
 			parent = parts.length > 1 ? parts.join( "/" ) : null,
@@ -82,27 +96,65 @@ grunt.registerHelper( "wordpress-walk-posts", function( dir, walkFn, complete ) 
 	}, complete );
 });
 
-// Parse an html file into a post object. The metadata for the post is read
-// out of a <script> element containing JSON at the top of the file.
-grunt.registerHelper( "wordpress-parse-post", function( path ) {
+// Parse a markdown file into a post object. The metadata for the post is read
+// out of a JSON object at the top of the file wrapped by "---".
+grunt.registerHelper( "wordpress-parse-post", function( file_path ) {
 	var index,
-		post = {},
-		content = grunt.file.read( path );
+			post,
+			content = grunt.file.read( file_path );
 
-	// The metadata is optional, if it exists it must be the first characater
-	if ( content.substring( 0, 8 ) === "<script>" ) {
+	if ( path.extname(file_path) == ".html" ) {
+		post = grunt.helper( "wordpress-parse-html-post", content );
+	}
+
+	if ( path.extname(file_path) == ".md" ) {
+		post = grunt.helper( "wordpress-parse-markdown-post", content );
+	}
+
+	if ( post == null ) {
+		grunt.log.error( "Invalid JSON metadata for " + file_path );
+		return null;
+	}
+
+	return post;
+});
+
+grunt.registerHelper( "wordpress-parse-html-post", function( content ) {
+	var index,
+			post = {},
+			metaStart = "<script>",
+			metaEnd = "</script>";
+
+	if ( content.substring( 0, metaStart.length ) === metaStart ) {
 		try {
-			index = content.indexOf( "</script>" );
-			post = JSON.parse( content.substr( 8, index - 8 ) );
-			if ( "date" in post ) {
-				post.date = new Date( post.date );
-			}
-			if ( "modified" in post ) {
-				post.modified = new Date( post.modified );
-			}
-			content = content.substr( index + 9 );
+			index = content.indexOf( metaEnd );
+			post = JSON.parse( content.substr( metaStart.length, index - metaStart.length ) );
+			post = parsePostJSON( post );
+			content = content.substr( index + metaEnd.length );
 		} catch( error ) {
-			grunt.log.error( "Invalid JSON metadata for " + path );
+			return null;
+		}
+	}
+
+	post.content = content;
+	return post;
+});
+
+grunt.registerHelper( "wordpress-parse-markdown-post", function( content ) {
+	var index,
+			post = {},
+			metaStart = "---\n",
+			metaEnd = "\n---\n";
+
+	if ( content.substring( 0, metaStart.length ) === metaStart ) {
+		try {
+			index = content.indexOf( metaEnd );
+			post = JSON.parse( content.substr( metaStart.length, index - metaStart.length ) );
+			post = parsePostJSON( post );
+
+			content = content.substr( index + metaEnd.length );
+			content = marked( content );
+		} catch( error ) {
 			return null;
 		}
 	}
@@ -124,8 +176,9 @@ grunt.registerHelper( "wordpress-validate-posts", function( dir, fn ) {
 		postPaths[ post.__postPath ] = true;
 
 		// Verify file extension
-		if ( file.substr( file.length - 5 ) !== ".html" ) {
-			return fn( new Error( "Invalid file extension for " + file + "; must be .html." ) );
+		var extension = path.extname(file);
+		if ( extension !== ".md" && extension !== ".html" ) {
+			return fn( new Error( "Invalid file extension for " + file + "; must be .md or .html." ) );
 		}
 
 		// Verify parent
