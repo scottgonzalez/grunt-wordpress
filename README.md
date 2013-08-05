@@ -16,7 +16,7 @@ grunt.loadNpmTasks( "grunt-wordpress" );
 
 Finally, copy `grunt-wordpress.php` in to your WordPress install as a plugin.
 
-Resources are uploaded to `/gw-resources/{HOST_NAME}/`, so if you'd like a
+Resources are uploaded to `/gw-resources/{HOME_URL}/`, so if you'd like a
 friendlier name, you'll need to setup a redirect in your web server.
 
 If you have problems uploading resources, check the [Permissive Uploads](#permissive-uploads) section.
@@ -319,7 +319,7 @@ Overwrites existing resources with the same path.
 * `callback` (`function( error, checksum )`): Callback to invoke after publishing the resource.
   * `checksum`: Checksum of the encoded content.
 
-*Note: Resources are uploaded to `/gw-resources/{HOST_NAME}/`.*
+*Note: Resources are uploaded to `/gw-resources/{HOME_URL}/`.*
 
 #### wordpress-delete-resource( path, callback )
 
