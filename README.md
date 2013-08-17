@@ -2,6 +2,8 @@
 
 Grunt plugin for publishing content to WordPress
 
+Support this project by [donating on Gittip](https://www.gittip.com/scottgonzalez/).
+
 ## Getting Started
 
 Install this grunt plugin next to your project's
@@ -371,3 +373,7 @@ add_filter( 'pre_site_option_fileupload_maxk', function() {
 ## License
 Copyright 2013 Scott González
 Licensed under the MIT license.
+
+---
+
+Support this project by [donating on Gittip](https://www.gittip.com/scottgonzalez/).
