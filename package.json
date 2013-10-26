@@ -32,6 +32,6 @@
     "grunt": "0.3.x"
   },
   "keywords": [
-    "gruntplugin wordpress"
+    "gruntplugin", "wordpress"
   ]
 }
