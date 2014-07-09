@@ -6,20 +6,11 @@ Support this project by [donating on Gittip](https://www.gittip.com/scottgonzale
 
 ## Getting Started
 
-Install this grunt plugin next to your project's
-[grunt.js gruntfile](https://github.com/cowboy/grunt/blob/master/docs/getting_started.md)
-with: `npm install grunt-wordpress`
+grunt-wordpress works just like any other [Grunt](http://gruntjs.com/) plugin. However, only Grunt 3.x is currently supported. See the [Config](#config) section for details on setting up the Grunt tasks.
 
-Then add this line to your project's `grunt.js` gruntfile:
+Make sure to copy `grunt-wordpress.php` in to your WordPress install as a plugin.
 
-```javascript
-grunt.loadNpmTasks( "grunt-wordpress" );
-```
-
-Finally, copy `grunt-wordpress.php` in to your WordPress install as a plugin.
-
-Resources are uploaded to `/gw-resources/{HOME_URL}/`, so if you'd like a
-friendlier name, you'll need to setup a redirect in your web server.
+Resources are uploaded to `/gw-resources/{HOME_URL}/`. If you'd like a friendlier name, you can set up a redirect in your web server.
 
 If you have problems uploading resources, check the [Permissive Uploads](#permissive-uploads) section.
 
