@@ -14,7 +14,7 @@ Resources are uploaded to `/gw-resources/{HOME_URL}/`. If you'd like a friendlie
 
 If you have problems uploading resources, check the [Permissive Uploads](#permissive-uploads) section.
 
-## API
+## Node.js API
 
 For most projects, you should only need to specify the `wordpress` config
 and use the `wordpress-deploy` task (or its alias `deploy`).
@@ -329,6 +329,26 @@ Synchronizes all resources in `path` to the WordPress site.
 
 * `path`: The directory containing resources to synchronize.
 * `callback` (`function( error )`): Callback to invoke after synchronizing all resources.
+
+## PHP API
+
+### Constants
+
+#### GW_VERSION
+
+The installed version of grunt-wordpress.
+
+#### GW_RESOURCE_DIR
+
+The path to the resources directory for the current site.
+
+### Methods
+
+#### gw_resources_dir( url )
+
+Gets the resources directory for a specific site.
+
+* `url`: The URL for the site.
 
 ## Permissive Uploads
 
