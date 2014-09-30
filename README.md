@@ -63,10 +63,11 @@ target task:
   Can be a full URL, e.g., `http://wordpress.dev:123/some/path`
   or as short as just the host name.
   If the protocol is `https`, then a secure connection will be used.
+* `host` (optional): The actual host to connect to if different from the URL, e.g., when deploying to a local server behind a firewall.
 * `username`: WordPress username.
 * `password`: WordPress password.
 * `dir`: Directory containing posts, taxonomies, and resources (see [Directory Structure](#directory-structure)).
-* `_default`: The default deployment target, optional.
+* `_default` (optional): The default deployment target.
 
 ### Directory Structure
 
