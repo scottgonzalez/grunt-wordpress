@@ -74,8 +74,9 @@ grunt.registerHelper( "wordpress-validate-xmlrpc-version", function( fn ) {
 		}
 
 		if ( xmlrpcVersion !== version ) {
-			return fn( new Error( "Mismatching versions. " +
-				"grunt-wordpress: " + version + "; XML-RPC version: " + xmlrpcVersion ) );
+			return fn( new Error( "Mismatching versions for grunt-wordpress. " +
+				"Version " + version + " is installed as a Grunt plugin, " +
+				"but the WordPress server is running version " + xmlrpcVersion + "." ) );
 		}
 
 		grunt.verbose.ok();
