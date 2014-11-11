@@ -1,139 +1,31 @@
-/*
- * grunt-wordpress
- * https://github.com/scottgonzalez/grunt-wordpress
- *
- * Copyright (c) 2013 Scott González
- * Licensed under the MIT license.
- */
+var wordpress = require( "../" );
 
 module.exports = function( grunt ) {
 
-require( grunt.task.getFile( "wordpress/posts.js" ) )( grunt );
-require( grunt.task.getFile( "wordpress/taxonomies.js" ) )( grunt );
-require( grunt.task.getFile( "wordpress/resources.js" ) )( grunt );
+var client = (function() {
+	var _client;
 
-var _client,
-	path = require( "path" ),
-	wordpress = require( "wordpress" ),
-	async = grunt.utils.async,
-	version = require( "../package" ).version;
+	return function() {
+		if ( !_client ) {
+			var config = grunt.config( "wordpress" );
+			config.verbose = grunt.option( "verbose" ) || false;
 
-// Async directory recursion, always walks all files before recursing
-grunt.registerHelper( "wordpress-recurse", function recurse( rootdir, fn, complete ) {
-	var path = rootdir + "/*";
-	async.forEachSeries( grunt.file.expandFiles( path ), fn, function( error ) {
-		if ( error ) {
-			return complete( error );
+			_client = wordpress.createClient( config );
+			_client.log = function() {
+				grunt.log.writeln.apply( grunt.log, arguments );
+			};
+			_client.logError = function() {
+				grunt.log.error.apply( grunt.log, arguments );
+			};
 		}
 
-		async.forEachSeries( grunt.file.expandDirs( path ), function( dir, dirComplete ) {
-			recurse( dir, fn, dirComplete );
-		}, complete );
-	});
-});
+		return _client;
+	};
+})();
 
-function config() {
-	var target = grunt.config( "target" ) || grunt.config( "wordpress._default" ),
-		base = grunt.config( "wordpress" );
-	if ( target ) {
-		return base[ target ];
-	}
-	return base;
-}
-
-grunt.registerHelper( "wordpress-client", function() {
-	if ( !_client ) {
-		_client = wordpress.createClient( config() );
-	}
-	return _client;
-});
-
-grunt.registerHelper( "wordpress-validate-xmlrpc-version", function( fn ) {
-	var client = grunt.helper( "wordpress-client" );
-	grunt.verbose.write( "Verifying XML-RPC version..." );
-	client.authenticatedCall( "gw.getVersion", function( error, xmlrpcVersion ) {
-		if ( error ) {
-			grunt.verbose.error();
-
-			if ( error.code === "ECONNREFUSED" ) {
-				return fn( new Error( "Could not connect to WordPress." ) );
-			}
-			if ( error.code === -32601 ) {
-				return fn( new Error(
-					"XML-RPC extensions for grunt-wordpress are not installed." ) );
-			}
-			if ( !error.code ) {
-				return fn( new Error( "Unknown error. " +
-					"Please ensure that your database server is running " +
-					"and WordPress is functioning properly." ) );
-			}
-
-			// XML-RPC is disabled or bad credentials
-			// WordPress provides good error messages, so we don't do any special handling
-			return fn( error );
-		}
-
-		if ( xmlrpcVersion !== version ) {
-			return fn( new Error( "Mismatching versions for grunt-wordpress. " +
-				"Version " + version + " is installed as a Grunt plugin, " +
-				"but the WordPress server is running version " + xmlrpcVersion + "." ) );
-		}
-
-		grunt.verbose.ok();
-		fn( null );
-	});
-});
-
-grunt.registerTask( "wordpress-sync", "Synchronize WordPress with local content", function() {
-	this.requires( "wordpress-validate" );
-
-	var done = this.async(),
-		dir = grunt.config( "wordpress.dir" );
-
-	async.waterfall([
-		function syncTerms( fn ) {
-			grunt.helper( "wordpress-sync-terms", path.join( dir, "taxonomies.json" ), fn );
-		},
-
-		function syncPosts( termMap, fn ) {
-			grunt.helper( "wordpress-sync-posts", path.join( dir, "posts/" ), termMap, fn );
-		},
-
-		function syncResources( fn ) {
-			grunt.helper( "wordpress-sync-resources", path.join( dir, "resources/" ), fn );
-		}
-	], function( error ) {
-		if ( !error ) {
-			return done();
-		}
-
-		if ( error.code === "ECONNREFUSED" ) {
-			grunt.log.error( "Could not connect to WordPress XML-RPC server." );
-		} else {
-			grunt.log.error( error );
-		}
-
-		done( false );
-	});
-});
-
-grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing WordPress", function() {
-	var done = this.async(),
-		dir = grunt.config( "wordpress.dir" );
-
-	async.waterfall([
-		function( fn ) {
-			grunt.helper( "wordpress-validate-xmlrpc-version", fn );
-		},
-
-		function( fn ) {
-			grunt.helper( "wordpress-validate-terms", path.join( dir, "taxonomies.json" ), fn );
-		},
-
-		function( fn ) {
-			grunt.helper( "wordpress-validate-posts", path.join( dir, "posts/" ), fn );
-		}
-	], function( error ) {
+grunt.registerTask( "wordpress-validate", function() {
+	var done = this.async();
+	client().validate(function( error ) {
 		if ( error ) {
 			grunt.log.error( error );
 			return done( false );
@@ -143,8 +35,18 @@ grunt.registerTask( "wordpress-validate", "Validate HTML files for synchronizing
 	});
 });
 
-grunt.registerTask( "target", "Runtime configuration to choose deployment target", function( target ) {
-	grunt.config.set( "target", target );
+grunt.registerTask( "wordpress-sync", function() {
+	this.requires( "wordpress-validate" );
+
+	var done = this.async();
+	client().sync(function( error ) {
+		if ( error ) {
+			grunt.log.error( error );
+			return done( false );
+		}
+
+		done();
+	});
 });
 
 grunt.registerTask( "wordpress-publish", "wordpress-validate wordpress-sync" );

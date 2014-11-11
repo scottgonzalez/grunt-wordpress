@@ -32,33 +32,6 @@ grunt.initConfig({
 });
 ```
 
-This works for a single deployment target. If you have multiple targets, you
-can specify url, username and password for each:
-
-```javascript
-grunt.initConfig({
-	wordpress: {
-		dev: {
-			url: "wordpress.dev",
-			username: "admin",
-			password: "admin",
-		},
-		live: {
-			url: "wordpress.com",
-			username: "admin",
-			password: "admin",
-		},
-		_default: "dev",
-		dir: "dist"
-	}
-});
-```
-
-If nothing is specified, the `_default` target is used. Override using the
-target task:
-
-	grunt target:live deploy
-
 * `url`: The URL for the WordPress install.
   Can be a full URL, e.g., `http://wordpress.dev:123/some/path`
   or as short as just the host name.
@@ -67,7 +40,6 @@ target task:
 * `username`: WordPress username.
 * `password`: WordPress password.
 * `dir`: Directory containing posts, taxonomies, and resources (see [Directory Structure](#directory-structure)).
-* `_default` (optional): The default deployment target.
 
 ### Directory Structure
 

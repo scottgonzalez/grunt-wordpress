@@ -2,7 +2,8 @@ module.exports = function( grunt ) {
 
 grunt.initConfig({
 	lint: {
-		files: [ "grunt.js", "tasks/**/*.js" ]
+		src: [ "index.js", "lib/**/*.js" ],
+		build: [ "grunt.js", "tasks/**/*.js" ]
 	},
 	jshint: (function() {
 		var rc = grunt.file.readJSON( ".jshintrc" ),
