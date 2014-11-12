@@ -17,36 +17,8 @@ function Client( options ) {
 	this.options = options;
 	this.verbose = options.verbose || false;
 	this.client = wordpress.createClient( options );
+	this.bindClientMethods();
 }
-
-// Async directory recursion, always walks all files before recursing
-Client.recurse = function( rootdir, walkFn, complete ) {
-	glob( rootdir + "/*", { mark: true }, function( error, entries ) {
-		if ( error ) {
-			return complete( error );
-		}
-
-		var directories = [];
-		var files = entries.filter(function( entry ) {
-			if ( /\/$/.test( entry ) ) {
-				directories.push( entry );
-				return false;
-			}
-
-			return true;
-		});
-
-		async.forEachSeries( files, walkFn, function( error ) {
-			if ( error ) {
-				return complete( error );
-			}
-
-			async.forEachSeries( directories, function( directory, directoryComplete ) {
-				Client.recurse( directory, walkFn, directoryComplete );
-			}, complete );
-		});
-	});
-};
 
 function flatten( obj ) {
 	if ( obj == null ) {
@@ -85,7 +57,86 @@ Client.createChecksum = function( obj ) {
 Client.prototype.log = console.log;
 Client.prototype.logError = console.error;
 
+Client.prototype.bindClientMethods = function() {
+	var context = this;
+	var client = this.client;
+
+	function bindContext( property ) {
+		if ( typeof client[ property ] !== "function" ) {
+			return;
+		}
+
+		var original = client[ property ];
+		client[ property ] = function() {
+			if ( !arguments.length ) {
+				return;
+			}
+
+			var args = [].slice.apply( arguments );
+			var last = args.pop();
+			if ( typeof last === "function" ) {
+				last = last.bind( context );
+			}
+			args.push( last );
+
+			original.apply( client, args );
+		};
+	}
+
+	for ( var property in client ) {
+		bindContext( property );
+	}
+};
+
+Client.prototype.waterfall = function( steps, callback ) {
+	var context = this;
+
+	async.waterfall(
+		steps.map(function( step ) {
+			return step.bind( context );
+		}),
+		callback.bind( context )
+	);
+};
+
+Client.prototype.forEach = function( items, eachFn, complete ) {
+	async.forEachSeries( items, eachFn.bind( this ), complete.bind( this ) );
+};
+
+// Async directory recursion, always walks all files before recursing
+Client.prototype.recurse = function( rootdir, walkFn, complete ) {
+	complete = complete.bind( this );
+
+	glob( rootdir + "/*", { mark: true }, function( error, entries ) {
+		if ( error ) {
+			return complete( error );
+		}
+
+		var directories = [];
+		var files = entries.filter(function( entry ) {
+			if ( /\/$/.test( entry ) ) {
+				directories.push( entry );
+				return false;
+			}
+
+			return true;
+		});
+
+		this.forEach( files, walkFn, function( error ) {
+			if ( error ) {
+				return complete( error );
+			}
+
+			this.forEach( directories, function( directory, directoryComplete ) {
+				this.recurse( directory, walkFn, directoryComplete );
+			}, complete );
+		});
+	}.bind( this ));
+};
+
 Client.prototype.validateXmlrpcVersion = function( callback ) {
+	callback = callback.bind( this );
+
 	if ( this.verbose ) {
 		this.log( "Verifying XML-RPC version..." );
 	}
@@ -121,24 +172,26 @@ Client.prototype.validateXmlrpcVersion = function( callback ) {
 		}
 
 		callback( null );
-	}.bind( this ));
+	});
 };
 
 Client.prototype.validate = function( callback ) {
+	callback = callback.bind( this );
+
 	var dir = this.options.dir;
 
-	async.waterfall([
+	this.waterfall([
 		function validateXmlrpcVersion( callback ) {
 			this.validateXmlrpcVersion( callback );
-		}.bind( this ),
+		},
 
 		function validateTerms( callback ) {
 			this.validateTerms( path.join( dir, "taxonomies.json" ), callback );
-		}.bind( this ),
+		},
 
 		function validatePosts( callback ) {
 			this.validatePosts( path.join( dir, "posts/" ), callback );
-		}.bind( this )
+		}
 	], function( error ) {
 		if ( error ) {
 			return callback( error );
@@ -149,20 +202,22 @@ Client.prototype.validate = function( callback ) {
 };
 
 Client.prototype.sync = function( callback ) {
+	callback = callback.bind( this );
+
 	var dir = this.options.dir;
 
-	async.waterfall([
+	this.waterfall([
 		function syncTerms( callback ) {
 			this.syncTerms( path.join( dir, "taxonomies.json" ), callback );
-		}.bind( this ),
+		},
 
 		function syncPosts( termMap, callback ) {
 			this.syncPosts( path.join( dir, "posts/" ), termMap, callback );
-		}.bind( this ),
+		},
 
 		function syncResources( callback ) {
 			this.syncResources( path.join( dir, "resources/" ), callback );
-		}.bind( this )
+		}
 	], function( error ) {
 		if ( error ) {
 			if ( error.code === "ECONNREFUSED" ) {
@@ -173,7 +228,7 @@ Client.prototype.sync = function( callback ) {
 		}
 
 		callback( null );
-	}.bind( this ));
+	});
 };
 
 [ "posts", "taxonomies", "resources" ].forEach(function( module ) {
