@@ -20,40 +20,6 @@ function Client( options ) {
 	this.bindClientMethods();
 }
 
-function flatten( obj ) {
-	if ( obj == null ) {
-		return "";
-	}
-
-	if ( typeof obj === "string" ) {
-		return obj;
-	}
-
-	if ( typeof obj === "number" ) {
-		return String( obj );
-	}
-
-	if ( util.isDate( obj ) ) {
-		return obj.toGMTString();
-	}
-
-	if ( util.isArray( obj ) ) {
-		return obj.map(function( item ) {
-			return flatten( item );
-		}).join( "," );
-	}
-
-	return Object.keys( obj ).sort().map(function( prop ) {
-		return prop + ":" + flatten( obj[ prop ] );
-	}).join( ";" );
-}
-
-Client.createChecksum = function( obj ) {
-	var md5 = crypto.createHash( "md5" );
-	md5.update( flatten( obj ), "utf8" );
-	return md5.digest( "hex" );
-};
-
 Client.prototype.log = console.log;
 Client.prototype.logError = console.error;
 
@@ -133,6 +99,42 @@ Client.prototype.recurse = function( rootdir, walkFn, complete ) {
 		});
 	}.bind( this ));
 };
+
+Client.prototype.createChecksum = (function() {
+	function flatten( obj ) {
+		if ( obj == null ) {
+			return "";
+		}
+
+		if ( typeof obj === "string" ) {
+			return obj;
+		}
+
+		if ( typeof obj === "number" ) {
+			return String( obj );
+		}
+
+		if ( util.isDate( obj ) ) {
+			return obj.toGMTString();
+		}
+
+		if ( util.isArray( obj ) ) {
+			return obj.map(function( item ) {
+				return flatten( item );
+			}).join( "," );
+		}
+
+		return Object.keys( obj ).sort().map(function( prop ) {
+			return prop + ":" + flatten( obj[ prop ] );
+		}).join( ";" );
+	}
+
+	return function( obj ) {
+		var md5 = crypto.createHash( "md5" );
+		md5.update( flatten( obj ), "utf8" );
+		return md5.digest( "hex" );
+	};
+})();
 
 Client.prototype.validateXmlrpcVersion = function( callback ) {
 	callback = callback.bind( this );
