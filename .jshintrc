@@ -3,6 +3,7 @@
 	"eqnull": true,
 	"eqeqeq": true,
 	"expr": true,
+	"latedef": "nofunc",
 	"noarg": true,
 	"node": true,
 	"smarttabs": true,
