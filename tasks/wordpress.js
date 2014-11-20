@@ -24,33 +24,16 @@ var client = (function() {
 })();
 
 grunt.registerTask( "wordpress-validate", function() {
-	var done = this.async();
-	client().validate(function( error ) {
-		if ( error ) {
-			grunt.log.error( error );
-			return done( false );
-		}
-
-		done();
-	});
+	client().validate( this.async() );
 });
 
 grunt.registerTask( "wordpress-sync", function() {
 	this.requires( "wordpress-validate" );
-
-	var done = this.async();
-	client().sync(function( error ) {
-		if ( error ) {
-			grunt.log.error( error );
-			return done( false );
-		}
-
-		done();
-	});
+	client().sync( this.async() );
 });
 
-grunt.registerTask( "wordpress-publish", "wordpress-validate wordpress-sync" );
-grunt.registerTask( "wordpress-deploy", "build-wordpress wordpress-publish" );
-grunt.registerTask( "deploy", "wordpress-deploy" );
+grunt.registerTask( "wordpress-publish", [ "wordpress-validate", "wordpress-sync" ] );
+grunt.registerTask( "wordpress-deploy", [ "build-wordpress", "wordpress-publish" ] );
+grunt.registerTask( "deploy", [ "wordpress-deploy" ] );
 
 };
