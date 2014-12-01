@@ -2,7 +2,7 @@
 
 Grunt plugin for publishing content to WordPress using [Gilded WordPress](https://github.com/scottgonzalez/grunt-wordpress).
 
-Support this project by [donating on Gittip](https://www.gittip.com/scottgonzalez/).
+Support this project by [donating on Gratipay](https://gratipay.com/scottgonzalez/).
 
 
 
@@ -95,4 +95,4 @@ Copyright 2014 Scott González. Released under the terms of the MIT license.
 
 ---
 
-Support this project by [donating on Gittip](https://www.gittip.com/scottgonzalez/).
+Support this project by [donating on Gratipay](https://gratipay.com/scottgonzalez/).
