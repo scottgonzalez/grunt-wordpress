@@ -1,4 +1,4 @@
-var wordpress = require( "../" );
+var wordpress = require( "gilded-wordpress" );
 
 module.exports = function( grunt ) {
 

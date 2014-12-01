@@ -7,8 +7,7 @@ grunt.initConfig({
 		options: {
 			jshintrc: true
 		},
-		src: [ "index.js", "lib/**/*.js" ],
-		build: [ "Gruntfile.js", "tasks/**/*.js" ]
+		all: [ "Gruntfile.js", "tasks/**/*.js" ]
 	}
 });
 
