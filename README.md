@@ -83,6 +83,12 @@ If your project has multiple deploy targets, you can simply re-alias the `deploy
 
 
 
+## Using Gilded WordPress
+
+It's sometimes useful to have direct access to the Gilded WordPress module. You could install Gilded WordPress as a dependency alongside grunt-wordpress, but in order to guarantee that you're loading the same version, grunt-wordpress exposes its own dependency. Simply `require( "grunt-wordpress" )` and you'll get the Gilded WordPress module.
+
+
+
 ## Permissive Uploads
 
 Depending on what resources you're uploading, you may need to change some WordPress settings. See the [Gilded WordPress documentation](https://github.com/scottgonzalez/gilded-wordpress#permissive-uploads) for some settings that might help.
