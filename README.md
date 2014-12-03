@@ -1,6 +1,6 @@
 # grunt-wordpress
 
-Grunt plugin for publishing content to WordPress using [Gilded WordPress](https://github.com/scottgonzalez/grunt-wordpress).
+Grunt plugin for publishing content to WordPress using [Gilded WordPress](https://github.com/scottgonzalez/gilded-wordpress).
 
 Support this project by [donating on Gratipay](https://gratipay.com/scottgonzalez/).
 
@@ -49,7 +49,7 @@ grunt.initConfig({
 Walks through the `wordpress.dir` directory and performs various validations, such as:
 
 * Verifying that XML-RPC is enabled for the WordPress site.
-* Verifying that the custom XML-RPC methods for grunt-wordpress are installed.
+* Verifying that the custom XML-RPC methods for gilded-wordpress are installed.
 * Verifying the taxonomies and terms in `taxonomies.json`.
 * Verifying that child-parent relationships for posts are valid.
 * Verifying data for each post.
@@ -85,7 +85,7 @@ If your project has multiple deploy targets, you can simply re-alias the `deploy
 
 ## Permissive Uploads
 
-Depending on what resources you're uploading, you may need to change some WordPress settings. See the [Gilded WordPress documentation](https://github.com/scottgonzalez/grunt-wordpress#permissive-uploads) for some settings that might help.
+Depending on what resources you're uploading, you may need to change some WordPress settings. See the [Gilded WordPress documentation](https://github.com/scottgonzalez/gilded-wordpress#permissive-uploads) for some settings that might help.
 
 
 
