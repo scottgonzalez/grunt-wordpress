@@ -16,12 +16,14 @@
     "url": "https://github.com/scottgonzalez/grunt-wordpress/issues"
   },
   "license": "MIT",
+  "scripts": {
+    "test": "jshint tasks/*"
+  },
   "dependencies": {
     "gilded-wordpress": "1.0.1"
   },
   "devDependencies": {
-    "grunt": "0.4.5",
-    "grunt-contrib-jshint": "0.10.0"
+    "jshint": "2.8.0"
   },
   "keywords": [
     "gruntplugin",
