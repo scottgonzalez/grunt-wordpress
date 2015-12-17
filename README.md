@@ -97,7 +97,7 @@ Depending on what resources you're uploading, you may need to change some WordPr
 
 ## License
 
-Copyright 2014 Scott González. Released under the terms of the MIT license.
+Copyright Scott González. Released under the terms of the MIT license.
 
 ---
 
