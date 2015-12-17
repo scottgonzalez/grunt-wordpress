@@ -22,7 +22,7 @@
     }
   ],
   "dependencies": {
-    "gilded-wordpress": "1.0.0"
+    "gilded-wordpress": "1.0.1"
   },
   "devDependencies": {
     "grunt": "0.4.5",
