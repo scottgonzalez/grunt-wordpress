@@ -20,7 +20,7 @@
     "test": "jshint tasks/*"
   },
   "dependencies": {
-    "gilded-wordpress": "1.0.2"
+    "gilded-wordpress": "1.0.3"
   },
   "devDependencies": {
     "jshint": "2.8.0"
