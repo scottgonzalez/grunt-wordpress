@@ -17,6 +17,7 @@
   },
   "license": "MIT",
   "scripts": {
+    "copy-php-plugin": "./scripts/copy-php-plugin.js",
     "preversion": "./scripts/preversion.js",
     "test": "jshint tasks/*"
   },
