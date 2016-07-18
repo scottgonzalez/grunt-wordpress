@@ -17,6 +17,7 @@
   },
   "license": "MIT",
   "scripts": {
+    "preversion": "./scripts/preversion.js",
     "test": "jshint tasks/*"
   },
   "dependencies": {
