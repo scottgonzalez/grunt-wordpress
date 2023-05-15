@@ -2,8 +2,9 @@
 
 const fs = require('fs')
 const path = require('path')
+const package = require('../package');
 
-const definedVersion = process.env.npm_package_dependencies_gilded_wordpress
+const definedVersion = package.dependencies['gilded-wordpress'];
 const gildedPath = require.resolve('gilded-wordpress/gilded-wordpress.php')
 const gruntPath = path.join(__dirname, '../gilded-wordpress.php')
 const gildedSource = fs.readFileSync(gildedPath, 'utf8')
